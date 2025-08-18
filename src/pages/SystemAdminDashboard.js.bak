@@ -1,0 +1,1506 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { adminAPI, authAPI, studentAPI } from '../utils/api';
+import '../styles/dashboard.css';
+
+const SystemAdminDashboard = () => {
+  const { user, logout } = useAuth();
+  const [activeSection, setActiveSection] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  // User management state
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState('');
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showUserDetailModal, setShowUserDetailModal] = useState(false);
+  const [showUserByIdModal, setShowUserByIdModal] = useState(false);
+  const [userIdSearch, setUserIdSearch] = useState('');
+  const [searchedUser, setSearchedUser] = useState(null);
+  const [searchingById, setSearchingById] = useState(false);
+  
+  // Student management state
+  const [students, setStudents] = useState([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [studentsError, setStudentsError] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [showStudentModal, setShowStudentModal] = useState(false);
+  const [showCreateStudentModal, setShowCreateStudentModal] = useState(false);
+  const [showStudentDetailModal, setShowStudentDetailModal] = useState(false);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [programmeFilter, setProgrammeFilter] = useState('');
+  const [studentNumberSearch, setStudentNumberSearch] = useState('');
+  const [searchedStudent, setSearchedStudent] = useState(null);
+  const [searchingStudentById, setSearchingStudentById] = useState(false);
+  
+  // Profile management state
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  
+  // Dashboard stats state
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    adminUsers: 0,
+    studentUsers: 0,
+    totalStudents: 0,
+    internationalStudents: 0,
+    previousEhuStudents: 0
+  });
+
+  // Navigation items
+  const navigationItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+    { id: 'users', label: 'User Management', icon: '👥' },
+    { id: 'students', label: 'Student Management', icon: '🎓' },
+    { id: 'profile', label: 'Profile', icon: '⚙️' }
+  ];
+
+  useEffect(() => {
+    if (activeSection === 'users') {
+      fetchUsers();
+    } else if (activeSection === 'students') {
+      fetchStudents();
+    } else if (activeSection === 'dashboard') {
+      fetchDashboardData();
+    }
+  }, [activeSection]);
+
+  // Fetch functions
+  const fetchUsers = async () => {
+    try {
+      setUsersLoading(true);
+      setUsersError('');
+      
+      const data = await adminAPI.getAllUsers(0, 100);
+      setUsers(data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to fetch users';
+      setUsersError(`Failed to fetch users: ${errorMessage}`);
+      
+      if (error.response?.status === 401) {
+        setUsersError('Authentication failed. Please login again.');
+      } else if (error.response?.status === 403) {
+        setUsersError('Access denied. You don\'t have permission to view users.');
+      }
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      setStudentsLoading(true);
+      setStudentsError('');
+      
+      const data = await studentAPI.getAllStudents(0, 100, studentSearch, programmeFilter);
+      setStudents(data);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to fetch students';
+      setStudentsError(`Failed to fetch students: ${errorMessage}`);
+    } finally {
+      setStudentsLoading(false);
+    }
+  };
+
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch both users and students for dashboard stats
+      const [usersData, studentsData] = await Promise.all([
+        adminAPI.getAllUsers(0, 1000),
+        studentAPI.getAllStudents(0, 1000)
+      ]);
+      
+      // Calculate user stats
+      const userStats = {
+        totalUsers: usersData.length,
+        activeUsers: usersData.filter(u => u.is_active).length,
+        adminUsers: usersData.filter(u => u.role === 'system_admin').length,
+        studentUsers: usersData.filter(u => u.role === 'student').length
+      };
+      
+      // Calculate student stats
+      const studentStats = {
+        totalStudents: studentsData.length,
+        internationalStudents: studentsData.filter(s => s.international_student).length,
+        previousEhuStudents: studentsData.filter(s => s.previous_ehu_student).length
+      };
+      
+      setStats({ ...userStats, ...studentStats });
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }
+  };
+
+  // User management functions
+  const fetchUserById = async (userId) => {
+    try {
+      setUsersError('');
+      setSearchingById(true);
+      
+      const userData = await adminAPI.getUserById(userId);
+      setSearchedUser(userData);
+      return userData;
+    } catch (error) {
+      console.error('Error fetching user by ID:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'User not found';
+      setUsersError(`Failed to fetch user: ${errorMessage}`);
+      setSearchedUser(null);
+    } finally {
+      setSearchingById(false);
+    }
+  };
+
+  // Student management functions
+  const fetchStudentByNumber = async (studentNumber) => {
+    try {
+      setStudentsError('');
+      setSearchingStudentById(true);
+      
+      const studentData = await studentAPI.getStudentByNumber(studentNumber);
+      setSearchedStudent(studentData);
+      return studentData;
+    } catch (error) {
+      console.error('Error fetching student by number:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Student not found';
+      setStudentsError(`Failed to fetch student: ${errorMessage}`);
+      setSearchedStudent(null);
+    } finally {
+      setSearchingStudentById(false);
+    }
+  };
+
+  const handleCreateStudent = async (studentData) => {
+    try {
+      await studentAPI.createStudent(studentData);
+      fetchStudents(); // Refresh list
+      setShowCreateStudentModal(false);
+    } catch (error) {
+      console.error('Error creating student:', error);
+      throw error;
+    }
+  };
+
+  const handleUpdateStudent = async (studentNumber, studentData) => {
+    try {
+      await studentAPI.updateStudent(studentNumber, studentData);
+      fetchStudents(); // Refresh list
+      setShowStudentModal(false);
+      setSelectedStudent(null);
+    } catch (error) {
+      console.error('Error updating student:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteStudent = async (studentNumber) => {
+    if (window.confirm('Are you sure you want to delete this student?')) {
+      try {
+        await studentAPI.deleteStudent(studentNumber);
+        fetchStudents(); // Refresh list
+        setShowStudentDetailModal(false);
+        setSelectedStudent(null);
+      } catch (error) {
+        console.error('Error deleting student:', error);
+        alert('Failed to delete student');
+      }
+    }
+  };
+      console.error('Error fetching user by ID:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to fetch user';
+      setError(`Failed to fetch user: ${errorMessage}`);
+      throw error;
+    }
+  };
+
+  const handleSearchUserById = async () => {
+    if (!userIdSearch.trim()) {
+      setError('Please enter a user ID');
+      return;
+    }
+
+    try {
+      setSearchingById(true);
+      setError('');
+      
+      const userData = await adminAPI.getUserById(parseInt(userIdSearch));
+      setSearchedUser(userData);
+      setShowUserByIdModal(true);
+    } catch (error) {
+      console.error('Error searching user by ID:', error);
+      if (error.response?.status === 404) {
+        setError(`User with ID ${userIdSearch} not found`);
+      } else {
+        const errorMessage = error.response?.data?.detail || error.message || 'Failed to fetch user';
+        setError(`Failed to fetch user: ${errorMessage}`);
+      }
+    } finally {
+      setSearchingById(false);
+    }
+  };
+
+  const calculateStats = (userData) => {
+    const totalUsers = userData.length;
+    const activeUsers = userData.filter(user => user.is_active).length;
+    const adminUsers = userData.filter(user => 
+      ['system_admin', 'academic_admin', 'gbos_admin'].includes(user.role)
+    ).length;
+    const studentUsers = userData.filter(user => user.role === 'student').length;
+
+    setStats({
+      totalUsers,
+      activeUsers,
+      adminUsers,
+      studentUsers
+    });
+  };
+
+  const handleUserClick = async (user) => {
+    try {
+      // Fetch fresh user data
+      const userData = await fetchUserById(user.id);
+      setSelectedUser(userData);
+      setShowUserModal(true);
+    } catch (error) {
+      // If fetch fails, use the existing user data
+      setSelectedUser(user);
+      setShowUserModal(true);
+    }
+  };
+
+  const handleViewUser = async (user) => {
+    try {
+      const userData = await fetchUserById(user.id);
+      setSelectedUser(userData);
+      setShowUserDetailModal(true);
+    } catch (error) {
+      setSelectedUser(user);
+      setShowUserDetailModal(true);
+    }
+  };
+
+  const handleUpdateUser = async (updatedData) => {
+    try {
+      setError('');
+      console.log('Updating user:', selectedUser.id, updatedData);
+      
+      const result = await adminAPI.updateUser(selectedUser.id, updatedData);
+      console.log('User updated successfully:', result);
+      
+      await fetchUsers();
+      setShowUserModal(false);
+      setSelectedUser(null);
+      alert('User updated successfully!');
+    } catch (error) {
+      console.error('Error updating user:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to update user';
+      setError(`Failed to update user: ${errorMessage}`);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    try {
+      setError('');
+      console.log('Resetting password for user:', selectedUser.id);
+      
+      const result = await adminAPI.resetUserPassword(selectedUser.id, newPassword);
+      console.log('Password reset successfully:', result);
+      
+      setShowPasswordModal(false);
+      setNewPassword('');
+      setSelectedUser(null);
+      alert('Password reset successfully!');
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to reset password';
+      setError(`Failed to reset password: ${errorMessage}`);
+    }
+  };
+
+  const getRoleBadgeClass = (role) => {
+    const roleClasses = {
+      'system_admin': 'badge-primary',
+      'academic_admin': 'badge-secondary',
+      'gbos_admin': 'badge-tertiary',
+      'gbos_approver': 'badge-info',
+      'dos': 'badge-warning',
+      'supervisor': 'badge-success',
+      'student': 'badge-gray',
+      'examiner': 'badge-purple',
+      'ethics_admin': 'badge-pink',
+      'international_office': 'badge-blue',
+      'research_office': 'badge-indigo',
+      'finance_admin': 'badge-green',
+      'hr_representative': 'badge-orange',
+      'user': 'badge-gray'
+    };
+    return roleClasses[role] || 'badge-gray';
+  };
+
+  const formatRole = (role) => {
+    return role.split('_').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
+
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <div className="loading-state">
+          <div className="loading-spinner-large"></div>
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dashboard-container">
+      {/* Header */}
+      <header className="dashboard-header">
+        <div className="header-content">
+          <div className="header-left">
+            <div className="logo-section">
+              <img 
+                src={require('../image/logo.png')} 
+                alt="Edge Hill University" 
+                className="header-logo"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'block';
+                }}
+              />
+              <div className="logo-fallback-header" style={{ display: 'none' }}>
+                <div className="logo-circle-small">EHU</div>
+              </div>
+            </div>
+            <div className="header-title">
+              <h1>PGR Management System</h1>
+              <p>System Administrator Dashboard</p>
+            </div>
+          </div>
+          
+          <div className="header-right">
+            <div className="header-actions">
+              <button 
+                onClick={() => setShowProfileModal(true)} 
+                className="header-btn profile-btn"
+                title="Edit Profile"
+              >
+                👤 Profile
+              </button>
+              <button 
+                onClick={() => setShowChangePasswordModal(true)} 
+                className="header-btn password-btn"
+                title="Change Password"
+              >
+                🔒 Password
+              </button>
+            </div>
+            <div className="user-info">
+              <div className="user-avatar">
+                {user?.first_name?.[0]}{user?.last_name?.[0]}
+              </div>
+              <div className="user-details">
+                <span className="user-name">{user?.first_name} {user?.last_name}</span>
+                <span className="user-role">{formatRole(user?.role || '')}</span>
+              </div>
+            </div>
+            <button onClick={logout} className="logout-btn">
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation Tabs */}
+      <nav className="dashboard-nav">
+        <div className="nav-container">
+          <button 
+            className={`nav-tab ${activeTab === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveTab('overview')}
+          >
+            📊 Overview
+          </button>
+          <button 
+            className={`nav-tab ${activeTab === 'users' ? 'active' : ''}`}
+            onClick={() => setActiveTab('users')}
+          >
+            👥 User Management
+          </button>
+          <button 
+            className={`nav-tab ${activeTab === 'analytics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            📈 Analytics
+          </button>
+          <button 
+            className={`nav-tab ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+          >
+            ⚙️ Settings
+          </button>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="dashboard-main">
+        {error && (
+          <div className="error-banner dashboard-error">
+            {error}
+            <button onClick={() => setError('')} className="error-close">×</button>
+          </div>
+        )}
+
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <>
+            {/* Stats Cards */}
+            <div className="stats-grid">
+              <div className="stat-card primary">
+                <div className="stat-icon">👥</div>
+                <div className="stat-content">
+                  <h3>{stats.totalUsers}</h3>
+                  <p>Total Users</p>
+                </div>
+              </div>
+              
+              <div className="stat-card success">
+                <div className="stat-icon">✅</div>
+                <div className="stat-content">
+                  <h3>{stats.activeUsers}</h3>
+                  <p>Active Users</p>
+                </div>
+              </div>
+              
+              <div className="stat-card warning">
+                <div className="stat-icon">👨‍💼</div>
+                <div className="stat-content">
+                  <h3>{stats.adminUsers}</h3>
+                  <p>Admin Users</p>
+                </div>
+              </div>
+              
+              <div className="stat-card info">
+                <div className="stat-icon">🎓</div>
+                <div className="stat-content">
+                  <h3>{stats.studentUsers}</h3>
+                  <p>Students</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="content-card">
+              <div className="card-header">
+                <h2>Quick Actions</h2>
+              </div>
+              <div className="quick-actions">
+                <button 
+                  className="quick-action-btn" 
+                  onClick={() => setActiveTab('users')}
+                >
+                  <div className="action-icon">👥</div>
+                  <div className="action-content">
+                    <h3>Manage Users</h3>
+                    <p>View, edit, and manage all system users</p>
+                  </div>
+                </button>
+                <button 
+                  className="quick-action-btn" 
+                  onClick={() => {
+                    setActiveTab('users');
+                    setTimeout(() => {
+                      const searchInput = document.querySelector('.search-id-input');
+                      if (searchInput) searchInput.focus();
+                    }, 100);
+                  }}
+                >
+                  <div className="action-icon">🔍</div>
+                  <div className="action-content">
+                    <h3>Search User by ID</h3>
+                    <p>Find a specific user using their ID</p>
+                  </div>
+                </button>
+                <button 
+                  className="quick-action-btn" 
+                  onClick={() => setShowProfileModal(true)}
+                >
+                  <div className="action-icon">👤</div>
+                  <div className="action-content">
+                    <h3>Update Profile</h3>
+                    <p>Manage your profile information</p>
+                  </div>
+                </button>
+                <button 
+                  className="quick-action-btn" 
+                  onClick={() => setShowChangePasswordModal(true)}
+                >
+                  <div className="action-icon">🔒</div>
+                  <div className="action-content">
+                    <h3>Change Password</h3>
+                    <p>Update your account password</p>
+                  </div>
+                </button>
+                <button className="quick-action-btn">
+                  <div className="action-icon">📊</div>
+                  <div className="action-content">
+                    <h3>System Reports</h3>
+                    <p>Generate and view system reports</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <>
+            {/* Search User by ID Section */}
+            <div className="content-card mb-6">
+              <div className="card-header">
+                <h2>🔍 Search User by ID</h2>
+              </div>
+              <div className="search-by-id-content">
+                <div className="search-by-id-form">
+                  <div className="search-id-input-group">
+                    <input
+                      type="number"
+                      placeholder="Enter User ID (e.g., 12)"
+                      value={userIdSearch}
+                      onChange={(e) => setUserIdSearch(e.target.value)}
+                      className="search-id-input"
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearchUserById()}
+                    />
+                    <button 
+                      onClick={handleSearchUserById}
+                      className="search-id-btn"
+                      disabled={searchingById}
+                    >
+                      {searchingById ? '🔄 Searching...' : '🔍 Search'}
+                    </button>
+                  </div>
+                  <p className="search-hint">Enter a user ID to quickly find and view user details</p>
+                </div>
+              </div>
+            </div>
+
+            {/* User Management Section */}
+            <div className="content-card">
+              <div className="card-header">
+                <h2>👥 User Management</h2>
+                <div className="header-actions-inline">
+                  <div className="search-container">
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="search-input"
+                    />
+                  </div>
+                  <button onClick={fetchUsers} className="refresh-btn">
+                    🔄 Refresh
+                  </button>
+                  <button className="add-user-btn">
+                    ➕ Add User
+                  </button>
+                </div>
+              </div>
+            
+            {/* Users Stats */}
+            <div className="users-stats">
+              <div className="stat-item">
+                <span className="stat-number">{users.length}</span>
+                <span className="stat-label">Total Users</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">{users.filter(u => u.is_active).length}</span>
+                <span className="stat-label">Active</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-number">{users.filter(u => !u.is_verified).length}</span>
+                <span className="stat-label">Unverified</span>
+              </div>
+            </div>
+            
+            <div className="table-container">
+              <table className="users-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Department</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Verified</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users
+                    .filter(user => 
+                      !searchTerm || 
+                      user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      user.department?.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                    .map(user => (
+                    <tr key={user.id} className="user-row">
+                      <td>
+                        <div className="user-cell">
+                          <div className="user-avatar-small">
+                            {user.first_name?.[0]}{user.last_name?.[0]}
+                          </div>
+                          <div>
+                            <div className="user-name-small">{user.first_name} {user.last_name}</div>
+                            <div className="user-username">@{user.username}</div>
+                            <div className="user-id">ID: {user.id}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{user.email}</td>
+                      <td>{user.department || 'N/A'}</td>
+                      <td>
+                        <span className={`badge ${getRoleBadgeClass(user.role)}`}>
+                          {formatRole(user.role)}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`status-badge ${user.is_active ? 'active' : 'inactive'}`}>
+                          {user.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`status-badge ${user.is_verified ? 'verified' : 'unverified'}`}>
+                          {user.is_verified ? 'Verified' : 'Unverified'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="action-buttons">
+                          <button 
+                            className="action-btn view"
+                            onClick={() => handleViewUser(user)}
+                            title="View Details"
+                          >
+                            👁️
+                          </button>
+                          <button 
+                            className="action-btn edit"
+                            onClick={() => handleUserClick(user)}
+                            title="Edit User"
+                          >
+                            ✏️
+                          </button>
+                          <button 
+                            className="action-btn danger"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowPasswordModal(true);
+                            }}
+                            title="Reset Password"
+                          >
+                            🔐
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              {users.filter(user => 
+                !searchTerm || 
+                user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                user.department?.toLowerCase().includes(searchTerm.toLowerCase())
+              ).length === 0 && (
+                <div className="no-results">
+                  {searchTerm ? 'No users found matching your search.' : 'No users found.'}
+                </div>
+              )}
+            </div>
+            </div>
+          </>
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <div className="content-card">
+            <div className="card-header">
+              <h2>System Analytics</h2>
+            </div>
+            <div className="analytics-content">
+              <div className="analytics-grid">
+                <div className="analytics-card">
+                  <h3>User Growth</h3>
+                  <div className="chart-placeholder">📈 Chart Coming Soon</div>
+                </div>
+                <div className="analytics-card">
+                  <h3>Role Distribution</h3>
+                  <div className="chart-placeholder">🥧 Chart Coming Soon</div>
+                </div>
+                <div className="analytics-card">
+                  <h3>Activity Metrics</h3>
+                  <div className="chart-placeholder">📊 Chart Coming Soon</div>
+                </div>
+                <div className="analytics-card">
+                  <h3>Department Overview</h3>
+                  <div className="chart-placeholder">📋 Chart Coming Soon</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="content-card">
+            <div className="card-header">
+              <h2>System Settings</h2>
+            </div>
+            <div className="settings-content">
+              <div className="settings-section">
+                <h3>Account Settings</h3>
+                <div className="settings-actions">
+                  <button 
+                    className="settings-btn"
+                    onClick={() => setShowProfileModal(true)}
+                  >
+                    👤 Update Profile
+                  </button>
+                  <button 
+                    className="settings-btn"
+                    onClick={() => setShowChangePasswordModal(true)}
+                  >
+                    🔒 Change Password
+                  </button>
+                </div>
+              </div>
+              <div className="settings-section">
+                <h3>System Configuration</h3>
+                <div className="settings-actions">
+                  <button className="settings-btn">⚙️ General Settings</button>
+                  <button className="settings-btn">🔐 Security Settings</button>
+                  <button className="settings-btn">📧 Email Templates</button>
+                  <button className="settings-btn">🌐 System Preferences</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* User By ID Modal */}
+      {showUserByIdModal && searchedUser && (
+        <UserByIdModal
+          user={searchedUser}
+          onClose={() => {
+            setShowUserByIdModal(false);
+            setSearchedUser(null);
+            setUserIdSearch('');
+          }}
+          onEdit={() => {
+            setSelectedUser(searchedUser);
+            setShowUserByIdModal(false);
+            setShowUserModal(true);
+          }}
+          onResetPassword={() => {
+            setSelectedUser(searchedUser);
+            setShowUserByIdModal(false);
+            setShowPasswordModal(true);
+          }}
+        />
+      )}
+
+      {/* User Edit Modal */}
+      {showUserModal && selectedUser && (
+        <UserEditModal
+          user={selectedUser}
+          onClose={() => {
+            setShowUserModal(false);
+            setSelectedUser(null);
+          }}
+          onUpdate={handleUpdateUser}
+        />
+      )}
+
+      {/* User Detail Modal */}
+      {showUserDetailModal && selectedUser && (
+        <UserDetailModal
+          user={selectedUser}
+          onClose={() => {
+            setShowUserDetailModal(false);
+            setSelectedUser(null);
+          }}
+          onEdit={() => {
+            setShowUserDetailModal(false);
+            setShowUserModal(true);
+          }}
+          onResetPassword={() => {
+            setShowUserDetailModal(false);
+            setShowPasswordModal(true);
+          }}
+        />
+      )}
+
+      {/* Password Reset Modal */}
+      {showPasswordModal && selectedUser && (
+        <PasswordResetModal
+          user={selectedUser}
+          newPassword={newPassword}
+          setNewPassword={setNewPassword}
+          onClose={() => {
+            setShowPasswordModal(false);
+            setSelectedUser(null);
+            setNewPassword('');
+          }}
+          onReset={handleResetPassword}
+        />
+      )}
+
+      {/* Profile Edit Modal */}
+      {showProfileModal && (
+        <ProfileEditModal
+          user={user}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
+
+      {/* Change Password Modal */}
+      {showChangePasswordModal && (
+        <ChangePasswordModal
+          onClose={() => setShowChangePasswordModal(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+// User By ID Modal Component
+const UserByIdModal = ({ user, onClose, onEdit, onResetPassword }) => {
+  const formatRole = (role) => {
+    return role.split('_').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
+
+  const getRoleBadgeClass = (role) => {
+    const roleClasses = {
+      'system_admin': 'badge-primary',
+      'academic_admin': 'badge-secondary',
+      'gbos_admin': 'badge-tertiary',
+      'gbos_approver': 'badge-info',
+      'dos': 'badge-warning',
+      'supervisor': 'badge-success',
+      'student': 'badge-gray',
+      'examiner': 'badge-purple',
+      'ethics_admin': 'badge-pink',
+      'international_office': 'badge-blue',
+      'research_office': 'badge-indigo',
+      'finance_admin': 'badge-green',
+      'hr_representative': 'badge-orange',
+      'user': 'badge-gray'
+    };
+    return roleClasses[role] || 'badge-gray';
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content user-by-id-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>🔍 User Found (ID: {user.id})</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        
+        <div className="user-detail-content">
+          <div className="user-detail-header">
+            <div className="user-avatar-large">
+              {user.first_name?.[0]}{user.last_name?.[0]}
+            </div>
+            <div className="user-basic-info">
+              <h4>{user.first_name} {user.last_name}</h4>
+              <p>@{user.username}</p>
+              <span className={`badge ${getRoleBadgeClass(user.role)}`}>
+                {formatRole(user.role)}
+              </span>
+            </div>
+          </div>
+
+          <div className="user-detail-grid">
+            <div className="detail-item">
+              <label>User ID</label>
+              <span className="user-id-highlight">{user.id}</span>
+            </div>
+            <div className="detail-item">
+              <label>Username</label>
+              <span>{user.username}</span>
+            </div>
+            <div className="detail-item">
+              <label>Email</label>
+              <span>{user.email}</span>
+            </div>
+            <div className="detail-item">
+              <label>Full Name</label>
+              <span>{user.first_name} {user.last_name}</span>
+            </div>
+            <div className="detail-item">
+              <label>Department</label>
+              <span>{user.department || 'Not specified'}</span>
+            </div>
+            <div className="detail-item">
+              <label>Phone Number</label>
+              <span>{user.phone_number || 'Not specified'}</span>
+            </div>
+            <div className="detail-item">
+              <label>Role</label>
+              <span className={`badge ${getRoleBadgeClass(user.role)}`}>
+                {formatRole(user.role)}
+              </span>
+            </div>
+            <div className="detail-item">
+              <label>Account Status</label>
+              <span className={`status-badge ${user.is_active ? 'active' : 'inactive'}`}>
+                {user.is_active ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+            <div className="detail-item">
+              <label>Verification Status</label>
+              <span className={`status-badge ${user.is_verified ? 'verified' : 'unverified'}`}>
+                {user.is_verified ? 'Verified' : 'Unverified'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="modal-actions">
+          <button onClick={onClose} className="btn-secondary">
+            Close
+          </button>
+          <button onClick={onResetPassword} className="btn-danger">
+            🔐 Reset Password
+          </button>
+          <button onClick={onEdit} className="btn-primary">
+            ✏️ Edit User
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// User Detail Modal Component
+const UserDetailModal = ({ user, onClose, onEdit, onResetPassword }) => {
+  const formatRole = (role) => {
+    return role.split('_').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>User Details</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        
+        <div className="user-detail-content">
+          <div className="user-detail-header">
+            <div className="user-avatar-large">
+              {user.first_name?.[0]}{user.last_name?.[0]}
+            </div>
+            <div className="user-basic-info">
+              <h4>{user.first_name} {user.last_name}</h4>
+              <p>@{user.username}</p>
+              <span className={`badge ${user.role === 'system_admin' ? 'badge-primary' : 'badge-secondary'}`}>
+                {formatRole(user.role)}
+              </span>
+            </div>
+          </div>
+
+          <div className="user-detail-grid">
+            <div className="detail-item">
+              <label>User ID</label>
+              <span>{user.id}</span>
+            </div>
+            <div className="detail-item">
+              <label>Email</label>
+              <span>{user.email}</span>
+            </div>
+            <div className="detail-item">
+              <label>Department</label>
+              <span>{user.department || 'Not specified'}</span>
+            </div>
+            <div className="detail-item">
+              <label>Phone Number</label>
+              <span>{user.phone_number || 'Not specified'}</span>
+            </div>
+            <div className="detail-item">
+              <label>Account Status</label>
+              <span className={`status-badge ${user.is_active ? 'active' : 'inactive'}`}>
+                {user.is_active ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+            <div className="detail-item">
+              <label>Verification Status</label>
+              <span className={`status-badge ${user.is_verified ? 'verified' : 'unverified'}`}>
+                {user.is_verified ? 'Verified' : 'Unverified'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="modal-actions">
+          <button onClick={onClose} className="btn-secondary">
+            Close
+          </button>
+          <button onClick={onResetPassword} className="btn-danger">
+            Reset Password
+          </button>
+          <button onClick={onEdit} className="btn-primary">
+            Edit User
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Profile Edit Modal Component
+const ProfileEditModal = ({ user, onClose }) => {
+  const [formData, setFormData] = useState({
+    username: user?.username || '',
+    email: user?.email || '',
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
+    department: user?.department || '',
+    phone_number: user?.phone_number || '',
+    is_active: user?.is_active || true
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      await authAPI.updateProfile(formData);
+      alert('Profile updated successfully!');
+      onClose();
+      // Optionally refresh the page or update context
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setError(error.response?.data?.detail || 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Update Profile</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="modal-form">
+          {error && (
+            <div className="error-banner">
+              {error}
+            </div>
+          )}
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>First Name</label>
+              <input
+                type="text"
+                value={formData.first_name}
+                onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                required
+                disabled={loading}
+              />
+            </div>
+            <div className="form-group">
+              <label>Last Name</label>
+              <input
+                type="text"
+                value={formData.last_name}
+                onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                required
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Username</label>
+            <input
+              type="text"
+              value={formData.username}
+              onChange={(e) => setFormData({...formData, username: e.target.value})}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Department</label>
+              <input
+                type="text"
+                value={formData.department}
+                onChange={(e) => setFormData({...formData, department: e.target.value})}
+                disabled={loading}
+              />
+            </div>
+            <div className="form-group">
+              <label>Phone Number</label>
+              <input
+                type="text"
+                value={formData.phone_number}
+                onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" onClick={onClose} className="btn-secondary" disabled={loading}>
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'Updating...' : 'Update Profile'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Change Password Modal Component
+const ChangePasswordModal = ({ onClose }) => {
+  const [formData, setFormData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    if (formData.new_password !== formData.confirm_password) {
+      setError('New passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.new_password.length < 6) {
+      setError('New password must be at least 6 characters long');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await authAPI.changePassword({
+        current_password: formData.current_password,
+        new_password: formData.new_password
+      });
+      alert('Password changed successfully!');
+      onClose();
+    } catch (error) {
+      console.error('Error changing password:', error);
+      setError(error.response?.data?.detail || 'Failed to change password');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content small" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Change Password</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="modal-form">
+          {error && (
+            <div className="error-banner">
+              {error}
+            </div>
+          )}
+
+          <div className="form-group">
+            <label>Current Password</label>
+            <input
+              type="password"
+              value={formData.current_password}
+              onChange={(e) => setFormData({...formData, current_password: e.target.value})}
+              required
+              disabled={loading}
+              placeholder="Enter current password"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>New Password</label>
+            <input
+              type="password"
+              value={formData.new_password}
+              onChange={(e) => setFormData({...formData, new_password: e.target.value})}
+              required
+              disabled={loading}
+              placeholder="Enter new password"
+              minLength={6}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Confirm New Password</label>
+            <input
+              type="password"
+              value={formData.confirm_password}
+              onChange={(e) => setFormData({...formData, confirm_password: e.target.value})}
+              required
+              disabled={loading}
+              placeholder="Confirm new password"
+              minLength={6}
+            />
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" onClick={onClose} className="btn-secondary" disabled={loading}>
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'Changing...' : 'Change Password'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+const UserEditModal = ({ user, onClose, onUpdate }) => {
+  const [formData, setFormData] = useState({
+    username: user.username,
+    email: user.email,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    department: user.department || '',
+    phone_number: user.phone_number || '',
+    role: user.role,
+    is_active: user.is_active,
+    is_verified: user.is_verified
+  });
+
+  const roles = [
+    'system_admin', 'academic_admin', 'gbos_admin', 'gbos_approver',
+    'dos', 'supervisor', 'student', 'examiner', 'ethics_admin',
+    'international_office', 'research_office', 'finance_admin',
+    'hr_representative', 'user'
+  ];
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onUpdate(formData);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Edit User</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="modal-form">
+          <div className="form-row">
+            <div className="form-group">
+              <label>First Name</label>
+              <input
+                type="text"
+                value={formData.first_name}
+                onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Last Name</label>
+              <input
+                type="text"
+                value={formData.last_name}
+                onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Username</label>
+            <input
+              type="text"
+              value={formData.username}
+              onChange={(e) => setFormData({...formData, username: e.target.value})}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              required
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Department</label>
+              <input
+                type="text"
+                value={formData.department}
+                onChange={(e) => setFormData({...formData, department: e.target.value})}
+              />
+            </div>
+            <div className="form-group">
+              <label>Phone Number</label>
+              <input
+                type="text"
+                value={formData.phone_number}
+                onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Role</label>
+            <select
+              value={formData.role}
+              onChange={(e) => setFormData({...formData, role: e.target.value})}
+              required
+            >
+              {roles.map(role => (
+                <option key={role} value={role}>
+                  {role.split('_').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                  ).join(' ')}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group checkbox-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={formData.is_active}
+                  onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
+                />
+                Active
+              </label>
+            </div>
+            <div className="form-group checkbox-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={formData.is_verified}
+                  onChange={(e) => setFormData({...formData, is_verified: e.target.checked})}
+                />
+                Verified
+              </label>
+            </div>
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" onClick={onClose} className="btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary">
+              Update User
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Password Reset Modal Component
+const PasswordResetModal = ({ user, newPassword, setNewPassword, onClose, onReset }) => {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content small" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Reset Password</h3>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        
+        <div className="modal-body">
+          <p>Reset password for: <strong>{user.first_name} {user.last_name}</strong></p>
+          
+          <div className="form-group">
+            <label>New Password</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Enter new password"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="modal-actions">
+          <button onClick={onClose} className="btn-secondary">
+            Cancel
+          </button>
+          <button 
+            onClick={onReset} 
+            className="btn-danger"
+            disabled={!newPassword}
+          >
+            Reset Password
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SystemAdminDashboard;
