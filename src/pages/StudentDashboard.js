@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { studentAPI, supervisorAPI, assignmentAPI, registrationAPI, authAPI, vivaTeamAPI, submissionAPI } from '../utils/api';
-import '../styles/dashboard.css';
-import '../styles/student-dashboard.css';
+import '../styles/shared-dashboard.css';
+import logo from '../image/logo.png';
 
 const StudentDashboard = () => {
   const { user, logout } = useAuth();
@@ -72,6 +72,8 @@ const StudentDashboard = () => {
   const [profileError, setProfileError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [extensionError, setExtensionError] = useState('');
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   
   // Modal states
@@ -164,6 +166,7 @@ const StudentDashboard = () => {
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     try {
+      setProfileLoading(true);
       setProfileError('');
       setSuccessMessage('');
       
@@ -174,24 +177,29 @@ const StudentDashboard = () => {
       await fetchUserProfile();
     } catch (err) {
       setProfileError(err.message || 'Failed to update profile');
+    } finally {
+      setProfileLoading(false);
     }
   };
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
+    
+    setPasswordError('');
+    setSuccessMessage('');
+    
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+    
+    if (passwordData.new_password.length < 6) {
+      setPasswordError('New password must be at least 6 characters long');
+      return;
+    }
+    
     try {
-      setPasswordError('');
-      setSuccessMessage('');
-      
-      if (passwordData.new_password !== passwordData.confirm_password) {
-        setPasswordError('New passwords do not match');
-        return;
-      }
-      
-      if (passwordData.new_password.length < 6) {
-        setPasswordError('New password must be at least 6 characters long');
-        return;
-      }
+      setPasswordLoading(true);
       
       await authAPI.changePassword({
         current_password: passwordData.current_password,
@@ -206,6 +214,8 @@ const StudentDashboard = () => {
       });
     } catch (err) {
       setPasswordError(err.message || 'Failed to change password');
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -424,6 +434,9 @@ const StudentDashboard = () => {
     setShowStageSubmissionModal(true);
   };
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
   const renderNavigation = () => (
     <>
       {/* Mobile Hamburger Button */}
@@ -445,10 +458,24 @@ const StudentDashboard = () => {
         ></div>
       )}
 
-      <aside className={`student-sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
-        <div className="student-sidebar-header">
-          <h2>Student Portal</h2>
-          <span className="user-info">Welcome, {user?.first_name || user?.username}</span>
+      <aside className={`dashboard-sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${sidebarOpen ? 'mobile-open' : ''}`}>
+        {/* Sidebar Header */}
+        <div className="sidebar-header">
+          <div className="sidebar-logo-section">
+            <img src={logo} alt="Logo" className="sidebar-logo" />
+            <div className="sidebar-branding">
+              <p className="sidebar-portal-name">Student</p>
+            </div>
+          </div>
+          <button 
+            className="sidebar-toggle"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            aria-label="Toggle sidebar"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+          </button>
           {/* Mobile Close Button */}
           <button 
             className="mobile-close"
@@ -458,242 +485,328 @@ const StudentDashboard = () => {
             ×
           </button>
         </div>
-      
-      <nav className="student-sidebar-nav">
-        <button 
-          className={`student-nav-item ${activeSection === 'dashboard' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveSection('dashboard');
-            setSidebarOpen(false);
-          }}
-        >
-          <span className="student-nav-icon">📊</span>
-          <span className="student-nav-label">Dashboard</span>
-        </button>
-        <button 
-          className={`student-nav-item ${activeSection === 'progress' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveSection('progress');
-            setSidebarOpen(false);
-          }}
-        >
-          <span className="student-nav-icon">🎯</span>
-          <span className="student-nav-label">Progress Tracking</span>
-        </button>
-        <button 
-          className={`student-nav-item ${activeSection === 'submissions' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveSection('submissions');
-            setSidebarOpen(false);
-          }}
-        >
-          <span className="student-nav-icon">📝</span>
-          <span className="student-nav-label">Submissions</span>
-        </button>
-        <button 
-          className={`student-nav-item ${activeSection === 'registrations' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveSection('registrations');
-            setSidebarOpen(false);
-          }}
-        >
-          <span className="student-nav-icon">📋</span>
-          <span className="student-nav-label">Registrations</span>
-        </button>
-        <button 
-          className={`student-nav-item ${activeSection === 'viva-teams' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveSection('viva-teams');
-            setSidebarOpen(false);
-          }}
-        >
-          <span className="student-nav-icon">🎓</span>
-          <span className="student-nav-label">Viva Teams</span>
-        </button>
-        <button 
-          className={`student-nav-item ${activeSection === 'profile' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveSection('profile');
-            setSidebarOpen(false);
-          }}
-        >
-          <span className="student-nav-icon">👤</span>
-          <span className="student-nav-label">Profile</span>
-        </button>
-      </nav>
-      
-      <div className="student-sidebar-footer">
-        <button className="student-logout-btn" onClick={logout}>
-          <span className="student-nav-icon">🚪</span>
-          <span>Logout</span>
-        </button>
-      </div>
-    </aside>
+
+        {/* Sidebar Navigation */}
+        <nav className="sidebar-nav">
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'dashboard' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('dashboard');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                <rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Dashboard</span>
+            </button>
+          </div>
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'progress' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('progress');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.7088 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4864 2.02168 11.3363C2.16356 9.18616 2.99721 7.13656 4.39828 5.49984C5.79935 3.86312 7.69279 2.72636 9.79619 2.24422C11.8996 1.76208 14.1003 1.95718 16.07 2.81" stroke="currentColor" strokeWidth="2"/>
+                <polyline points="22,4 12,14.01 9,11.01" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Progress Tracking</span>
+            </button>
+          </div>
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'submissions' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('submissions');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2"/>
+                <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2"/>
+                <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2"/>
+                <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2"/>
+                <polyline points="10,9 9,9 8,9" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Submissions</span>
+            </button>
+          </div>
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'registrations' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('registrations');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M9 11H15M9 15H15M17 21H7C6.46957 21 5.96086 20.7893 5.58579 20.4142C5.21071 20.0391 5 19.5304 5 19V5C5 4.46957 5.21071 3.96086 5.58579 3.58579C5.96086 3.21071 6.46957 3 7 3H12.586C12.8512 3.00006 13.1055 3.10545 13.293 3.293L19.707 9.707C19.8946 9.89449 19.9999 10.1488 20 10.414V19C20 19.5304 19.7893 20.0391 19.4142 20.4142C19.0391 20.7893 18.5304 21 18 21H17Z" stroke="currentColor" strokeWidth="2"/>
+                <path d="M13 3V9H19" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Registrations</span>
+            </button>
+          </div>
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'viva-teams' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('viva-teams');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke="currentColor" strokeWidth="2"/>
+                <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Viva Teams</span>
+            </button>
+          </div>
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'profile' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('profile');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Profile</span>
+            </button>
+          </div>
+        </nav>
+        
+        {/* Sidebar Footer - User Profile */}
+        <div className="sidebar-footer">
+          <div className="user-profile" onClick={() => setUserDropdownOpen(!userDropdownOpen)}>
+            <div className="user-avatar">
+              {user?.first_name?.charAt(0) || user?.username?.charAt(0) || 'U'}
+            </div>
+            <div className="user-info">
+              <p className="user-name">{user?.first_name || user?.username}</p>
+              <p className="user-role">Student</p>
+            </div>
+            <button className="user-menu-toggle">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" stroke="currentColor" strokeWidth="2"/>
+                <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" stroke="currentColor" strokeWidth="2"/>
+                <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </button>
+          </div>
+          
+          {/* User Dropdown */}
+          <div className={`user-dropdown ${userDropdownOpen ? 'show' : ''}`}>
+            <button 
+              className="dropdown-item"
+              onClick={() => {
+                setActiveSection('profile');
+                setUserDropdownOpen(false);
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              Profile
+            </button>
+            <button className="dropdown-item" onClick={logout}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeWidth="2"/>
+                <polyline points="16,17 21,12 16,7" stroke="currentColor" strokeWidth="2"/>
+                <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              Logout
+            </button>
+          </div>
+        </div>
+      </aside>
     </>
   );
 
   const renderDashboard = () => (
-    <div className="student-dashboard-content">
-      <h1>Student Dashboard</h1>
-      <p>Track your academic progress and manage your research journey.</p>
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Student Dashboard</h1>
+        <p className="page-subtitle">Overview of your academic progress and information</p>
+      </div>
       
-      <div className="student-info-grid">
-        <div className="student-info-card">
-          <h3>Registration Status</h3>
-          <div className="student-info-value">
-            {studentRegistration?.registration_status === 'approved' ? '✅ Approved' :
-             studentRegistration?.registration_status === 'pending' ? '⏳ Pending' :
-             studentRegistration?.registration_status === 'rejected' ? '❌ Rejected' :
-             studentRegistration?.registration_status || 'Not Available'}
+      {/* Statistics Grid */}
+      <div className="stats-grid">
+        <div className="stats-card">
+          <div className="stats-value">
+            {studentRegistration?.registration_status === 'approved' ? '✅' :
+             studentRegistration?.registration_status === 'pending' ? '⏳' :
+             studentRegistration?.registration_status === 'rejected' ? '❌' : '❓'}
           </div>
-          <div className={`student-info-status ${
-            studentRegistration?.registration_status === 'approved' ? 'student-status-active' :
-            studentRegistration?.registration_status === 'pending' ? 'student-status-pending' :
-            'student-status-inactive'
+          <div className="stats-label">Registration Status</div>
+          <span className={`status-badge ${
+            studentRegistration?.registration_status === 'approved' ? 'approved' :
+            studentRegistration?.registration_status === 'pending' ? 'pending' :
+            'inactive'
           }`}>
-            {studentRegistration?.registration_status || 'Unknown'}
-          </div>
+            {studentRegistration?.registration_status || 'Not Available'}
+          </span>
         </div>
         
-        <div className="student-info-card">
-          <h3>Assigned Supervisors</h3>
-          <div className="student-info-value">{studentSupervisors.length}</div>
-          <div className="student-info-status student-status-active">
+        <div className="stats-card">
+          <div className="stats-value">{studentSupervisors.length}</div>
+          <div className="stats-label">Supervisors</div>
+          <span className={`status-badge ${studentSupervisors.length > 0 ? 'active' : 'inactive'}`}>
             {studentSupervisors.length > 0 ? 'Assigned' : 'None'}
-          </div>
+          </span>
         </div>
         
-        <div className="student-info-card">
-          <h3>Viva Teams</h3>
-          <div className="student-info-value">{vivaTeams.length}</div>
-          <div className="student-info-status student-status-active">
+        <div className="stats-card">
+          <div className="stats-value">{vivaTeams.length}</div>
+          <div className="stats-label">Viva Teams</div>
+          <span className={`status-badge ${vivaTeams.length > 0 ? 'active' : 'inactive'}`}>
             {vivaTeams.length > 0 ? 'Available' : 'None'}
-          </div>
+          </span>
         </div>
         
-        <div className="student-info-card">
-          <h3>Course Code</h3>
-          <div className="student-info-value">{studentData?.course_code || 'N/A'}</div>
-          <div className="student-info-status student-status-active">
+        <div className="stats-card">
+          <div className="stats-value">{studentData?.course_code || 'N/A'}</div>
+          <div className="stats-label">Course Code</div>
+          <span className={`status-badge ${studentData?.course_code ? 'active' : 'inactive'}`}>
             {studentData?.course_code ? 'Enrolled' : 'Not Set'}
-          </div>
+          </span>
         </div>
       </div>
 
       {/* Student Information */}
-      <div className="info-section">
-        <h2>Personal Information</h2>
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Personal Information</h2>
+        </div>
         {studentData && (
-          <div className="info-grid">
-            <div className="info-item">
-              <label>Student Number:</label>
-              <span>{studentData.student_number}</span>
+          <div className="content-grid two-column">
+            <div className="info-panel">
+              <h4>Student Number</h4>
+              <p>{studentData.student_number}</p>
             </div>
-            <div className="info-item">
-              <label>Name:</label>
-              <span>{studentData.forename} {studentData.surname}</span>
+            <div className="info-panel">
+              <h4>Full Name</h4>
+              <p>{studentData.forename} {studentData.surname}</p>
             </div>
-            <div className="info-item">
-              <label>Cohort:</label>
-              <span>{studentData.cohort}</span>
+            <div className="info-panel">
+              <h4>Cohort</h4>
+              <p>{studentData.cohort}</p>
             </div>
-            <div className="info-item">
-              <label>Course Code:</label>
-              <span>{studentData.course_code}</span>
+            <div className="info-panel">
+              <h4>Course Code</h4>
+              <p>{studentData.course_code}</p>
             </div>
-            <div className="info-item">
-              <label>Programme of Study:</label>
-              <span>{studentData.programme_of_study}</span>
+            <div className="info-panel">
+              <h4>Programme of Study</h4>
+              <p>{studentData.programme_of_study}</p>
             </div>
-            <div className="info-item">
-              <label>Mode:</label>
-              <span>{studentData.mode}</span>
+            <div className="info-panel">
+              <h4>Mode</h4>
+              <p>{studentData.mode}</p>
             </div>
-            <div className="info-item">
-              <label>Subject Area:</label>
-              <span>{studentData.subject_area}</span>
+            <div className="info-panel">
+              <h4>Subject Area</h4>
+              <p>{studentData.subject_area}</p>
             </div>
-            <div className="info-item">
-              <label>International Student:</label>
-              <span>{studentData.international_student ? 'Yes' : 'No'}</span>
+            <div className="info-panel">
+              <h4>International Student</h4>
+              <p>{studentData.international_student ? 'Yes' : 'No'}</p>
             </div>
           </div>
         )}
       </div>
 
       {/* Registration Information */}
-      <div className="info-section">
-        <div className="section-header">
-          <h2>Registration Information</h2>
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Registration Information</h2>
           {studentRegistration && studentRegistration.registration_status !== 'approved' && (
             <button 
               onClick={() => setShowExtensionModal(true)}
-              className="btn btn-primary"
+              className="btn primary"
             >
               Request Extension
             </button>
           )}
         </div>
         {studentRegistration && (
-          <div className="info-grid">
-            <div className="info-item">
-              <label>Status:</label>
-              <span className={`status ${studentRegistration.registration_status}`}>
+          <div className="content-grid two-column">
+            <div className="info-panel highlight">
+              <h4>Status</h4>
+              <span className={`status-badge ${studentRegistration.registration_status}`}>
                 {studentRegistration.registration_status === 'approved' ? '✅ Approved' :
                  studentRegistration.registration_status === 'pending' ? '⏳ Pending' :
                  studentRegistration.registration_status === 'rejected' ? '❌ Rejected' :
                  studentRegistration.registration_status}
               </span>
             </div>
-            <div className="info-item">
-              <label>Original Deadline:</label>
-              <span>{studentRegistration.original_registration_deadline ? 
-                new Date(studentRegistration.original_registration_deadline).toLocaleDateString() : 'N/A'}</span>
+            <div className="info-panel">
+              <h4>Original Deadline</h4>
+              <p>{studentRegistration.original_registration_deadline ? 
+                new Date(studentRegistration.original_registration_deadline).toLocaleDateString() : 'N/A'}</p>
             </div>
-            <div className="info-item">
-              <label>Revised Deadline:</label>
-              <span>{studentRegistration.revised_registration_deadline ? 
-                new Date(studentRegistration.revised_registration_deadline).toLocaleDateString() : 'N/A'}</span>
+            <div className="info-panel">
+              <h4>Revised Deadline</h4>
+              <p>{studentRegistration.revised_registration_deadline ? 
+                new Date(studentRegistration.revised_registration_deadline).toLocaleDateString() : 'N/A'}</p>
             </div>
-            <div className="info-item">
-              <label>Extension Length:</label>
-              <span>{studentRegistration.registration_extension_length_days || 0} days</span>
+            <div className="info-panel">
+              <h4>Extension Length</h4>
+              <p>{studentRegistration.registration_extension_length_days || 0} days</p>
             </div>
-            <div className="info-item">
-              <label>Process Completed:</label>
-              <span>{studentRegistration.pgr_registration_process_completed ? 'Yes' : 'No'}</span>
+            <div className="info-panel">
+              <h4>Process Status</h4>
+              <span className={`status-badge ${studentRegistration.pgr_registration_process_completed ? 'active' : 'pending'}`}>
+                {studentRegistration.pgr_registration_process_completed ? 'Completed' : 'In Progress'}
+              </span>
             </div>
           </div>
         )}
       </div>
 
       {/* Supervisors */}
-      <div className="info-section">
-        <div className="section-header">
-          <h2>My Supervisors</h2>
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">My Supervisors</h2>
           <button 
             onClick={() => setShowSupervisorModal(true)}
-            className="btn btn-secondary"
+            className="btn secondary"
           >
             View All Supervisors
           </button>
         </div>
-        <div className="supervisors-list">
+        <div className="professional-list">
           {studentSupervisors.map(supervision => {
             const supervisor = allSupervisors.find(s => s.supervisor_id === supervision.supervisor_id);
             return (
-              <div key={supervision.student_supervisor_id} className="supervisor-card">
-                <div className="supervisor-info">
-                  <h4>{supervisor?.supervisor_name || `Supervisor ID: ${supervision.supervisor_id}`}</h4>
-                  <p><strong>Role:</strong> {supervision.role}</p>
-                  <p><strong>Email:</strong> {supervisor?.email || 'N/A'}</p>
-                  <p><strong>Department:</strong> {supervisor?.department || 'N/A'}</p>
-                  <p><strong>Start Date:</strong> {new Date(supervision.start_date).toLocaleDateString()}</p>
-                  {supervision.end_date && (
-                    <p><strong>End Date:</strong> {new Date(supervision.end_date).toLocaleDateString()}</p>
-                  )}
+              <div key={supervision.student_supervisor_id} className="list-item">
+                <div className="list-item-content">
+                  <h4 className="list-item-title">{supervisor?.supervisor_name || `Supervisor ID: ${supervision.supervisor_id}`}</h4>
+                  <p className="list-item-subtitle">
+                    <strong>Role:</strong> {supervision.role} | 
+                    <strong> Email:</strong> {supervisor?.email || 'N/A'} | 
+                    <strong> Department:</strong> {supervisor?.department || 'N/A'}
+                  </p>
+                  <p className="list-item-subtitle">
+                    <strong>Period:</strong> {new Date(supervision.start_date).toLocaleDateString()}
+                    {supervision.end_date && ` - ${new Date(supervision.end_date).toLocaleDateString()}`}
+                  </p>
                   {supervision.supervision_notes && (
-                    <p><strong>Notes:</strong> {supervision.supervision_notes}</p>
+                    <p className="list-item-subtitle"><strong>Notes:</strong> {supervision.supervision_notes}</p>
                   )}
                 </div>
               </div>
@@ -701,8 +814,10 @@ const StudentDashboard = () => {
           })}
           
           {studentSupervisors.length === 0 && (
-            <div className="no-data">
-              No supervisors assigned yet.
+            <div className="empty-state">
+              <div className="empty-state-icon">👨‍🏫</div>
+              <h3 className="empty-state-title">No Supervisors Assigned</h3>
+              <p className="empty-state-description">Your supervisors will appear here once they have been assigned to you.</p>
             </div>
           )}
         </div>
@@ -711,17 +826,19 @@ const StudentDashboard = () => {
   );
 
   const renderRegistrations = () => (
-    <div className="student-dashboard-content">
-      <div className="section-header">
-        <h1>My Registrations</h1>
-        <p>View your registration history and status updates.</p>
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">My Registrations</h1>
+        <p className="page-subtitle">View your registration history and status updates</p>
       </div>
       
-      {/* Filters */}
-      <div className="registrations-filters">
-        <div className="filter-group">
-          <label>Status:</label>
+      {/* Search and Filter Section */}
+      <div className="search-filter-section">
+        <div className="form-group">
+          <label className="form-label">Status Filter</label>
           <select
+            className="form-select"
             value={registrationFilters.status}
             onChange={(e) => handleRegistrationFilterChange('status', e.target.value)}
           >
@@ -731,9 +848,10 @@ const StudentDashboard = () => {
             <option value="rejected">Rejected</option>
           </select>
         </div>
-        <div className="filter-group">
-          <label>Limit:</label>
+        <div className="form-group">
+          <label className="form-label">Results Limit</label>
           <select
+            className="form-select"
             value={registrationFilters.limit}
             onChange={(e) => handleRegistrationFilterChange('limit', parseInt(e.target.value))}
           >
@@ -742,157 +860,123 @@ const StudentDashboard = () => {
             <option value={200}>200</option>
           </select>
         </div>
-        <button 
-          className="btn btn-primary"
-          onClick={fetchRegistrations}
-        >
-          Refresh
-        </button>
+        <div className="form-group">
+          <button 
+            className="btn primary"
+            onClick={fetchRegistrations}
+          >
+            Refresh Data
+          </button>
+        </div>
       </div>
       
       {/* Registrations Table */}
-      <div className="registrations-container">
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Registration Records</h2>
+        </div>
         {registrationsLoading ? (
-          <div className="loading">Loading registrations...</div>
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Loading registrations...</div>
+          </div>
         ) : (
-          <div className="registrations-table-wrapper">
-            <table className="registrations-table-optimized">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Status</th>
-                  <th>Deadlines</th>
-                  <th>Extension Info</th>
-                  <th>Process</th>
-                  <th>Timeline</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.isArray(registrations) && registrations.length > 0 ? (
-                  registrations.map((registration) => (
-                    <tr key={registration.registration_id}>
-                      <td className="reg-id">#{registration.registration_id}</td>
-                      <td className="reg-status">
-                        <span className={`status-badge reg-status-${registration.registration_status}`}>
-                          {registration.registration_status === 'approved' ? '✅' :
-                           registration.registration_status === 'pending' ? '⏳' :
-                           registration.registration_status === 'rejected' ? '❌' : '❓'}
-                          <span className="status-text">{registration.registration_status}</span>
-                        </span>
-                      </td>
-                      <td className="reg-deadlines">
-                        <div className="deadlines-info">
-                          <div className="deadline-item">
-                            <span className="deadline-label">Original:</span>
-                            <span className="deadline-value">
-                              {registration.original_registration_deadline 
-                                ? new Date(registration.original_registration_deadline).toLocaleDateString('en-GB')
-                                : 'N/A'
-                              }
-                            </span>
-                          </div>
-                          <div className="deadline-item">
-                            <span className="deadline-label">Revised:</span>
-                            <span className="deadline-value">
-                              {registration.revised_registration_deadline 
-                                ? new Date(registration.revised_registration_deadline).toLocaleDateString('en-GB')
-                                : 'N/A'
-                              }
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="reg-extension">
-                        <div className="extension-info">
-                          <div className="extension-item">
-                            <span className="extension-label">Days:</span>
-                            <span className="extension-value">
-                              {registration.registration_extension_length_days || 0}
-                            </span>
-                          </div>
-                          <div className="extension-item">
-                            <span className="extension-label">Requested:</span>
-                            <span className="extension-value">
-                              {registration.registration_extension_request_date 
-                                ? new Date(registration.registration_extension_request_date).toLocaleDateString('en-GB')
-                                : 'N/A'
-                              }
-                            </span>
-                          </div>
-                          <div className="extension-item">
-                            <span className="extension-label">Approved:</span>
-                            <span className="extension-value">
-                              {registration.date_of_registration_extension_approval 
-                                ? new Date(registration.date_of_registration_extension_approval).toLocaleDateString('en-GB')
-                                : 'N/A'
-                              }
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="reg-process">
-                        <span className={`process-badge ${registration.pgr_registration_process_completed ? 'completed' : 'incomplete'}`}>
-                          {registration.pgr_registration_process_completed ? '✅ Done' : '⏳ Progress'}
-                        </span>
-                      </td>
-                      <td className="reg-timeline">
-                        <div className="timeline-info">
-                          <div className="timeline-item">
-                            <span className="timeline-label">Created:</span>
-                            <span className="timeline-value">
-                              {new Date(registration.created_date).toLocaleDateString('en-GB')}
-                            </span>
-                          </div>
-                          <div className="timeline-item">
-                            <span className="timeline-label">Updated:</span>
-                            <span className="timeline-value">
-                              {new Date(registration.updated_date).toLocaleDateString('en-GB')}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="no-data">
-                      No registrations found. Your registration data will appear here once available.
+          <table className="dashboard-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Deadlines</th>
+                <th>Extension Info</th>
+                <th>Process</th>
+                <th>Timeline</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.isArray(registrations) && registrations.length > 0 ? (
+                registrations.map((registration) => (
+                  <tr key={registration.registration_id}>
+                    <td><strong>#{registration.registration_id}</strong></td>
+                    <td>
+                      <span className={`status-badge ${registration.registration_status}`}>
+                        {registration.registration_status === 'approved' ? '✅' :
+                         registration.registration_status === 'pending' ? '⏳' :
+                         registration.registration_status === 'rejected' ? '❌' : '❓'}
+                        {' ' + registration.registration_status}
+                      </span>
+                    </td>
+                    <td>
+                      <div>
+                        <strong>Original:</strong> {registration.original_registration_deadline ? 
+                          new Date(registration.original_registration_deadline).toLocaleDateString('en-GB') : 'N/A'}
+                      </div>
+                      <div>
+                        <strong>Revised:</strong> {registration.revised_registration_deadline ? 
+                          new Date(registration.revised_registration_deadline).toLocaleDateString('en-GB') : 'N/A'}
+                      </div>
+                    </td>
+                    <td>
+                      <div>
+                        <strong>Days:</strong> {registration.registration_extension_length_days || 0}
+                      </div>
+                      <div>
+                        <strong>Requested:</strong> {registration.registration_extension_request_date ? 
+                          new Date(registration.registration_extension_request_date).toLocaleDateString('en-GB') : 'N/A'}
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`status-badge ${registration.pgr_registration_process_completed ? 'active' : 'pending'}`}>
+                        {registration.pgr_registration_process_completed ? '✅ Completed' : '⏳ In Progress'}
+                      </span>
+                    </td>
+                    <td>
+                      <div>
+                        <strong>Created:</strong> {new Date(registration.created_date).toLocaleDateString('en-GB')}
+                      </div>
+                      <div>
+                        <strong>Updated:</strong> {new Date(registration.updated_date).toLocaleDateString('en-GB')}
+                      </div>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="empty-state">
+                    <div className="empty-state-icon">📋</div>
+                    <div className="empty-state-title">No Registrations Found</div>
+                    <div className="empty-state-description">Your registration data will appear here once available</div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         )}
       </div>
       
       {/* Registration Summary */}
       {Array.isArray(registrations) && registrations.length > 0 && (
-        <div className="registrations-summary">
-          <h3>Registration Summary</h3>
-          <div className="summary-stats">
-            <div className="stat-card">
-              <div className="stat-value">{registrations.length}</div>
-              <div className="stat-label">Total Registrations</div>
+        <div className="stats-grid">
+          <div className="stats-card">
+            <div className="stats-value">{registrations.length}</div>
+            <div className="stats-label">Total Registrations</div>
+          </div>
+          <div className="stats-card">
+            <div className="stats-value">
+              {registrations.filter(r => r.registration_status === 'approved').length}
             </div>
-            <div className="stat-card">
-              <div className="stat-value">
-                {registrations.filter(r => r.registration_status === 'approved').length}
-              </div>
-              <div className="stat-label">Approved</div>
+            <div className="stats-label">Approved</div>
+          </div>
+          <div className="stats-card">
+            <div className="stats-value">
+              {registrations.filter(r => r.registration_status === 'pending').length}
             </div>
-            <div className="stat-card">
-              <div className="stat-value">
-                {registrations.filter(r => r.registration_status === 'pending').length}
-              </div>
-              <div className="stat-label">Pending</div>
+            <div className="stats-label">Pending</div>
+          </div>
+          <div className="stats-card">
+            <div className="stats-value">
+              {registrations.filter(r => r.pgr_registration_process_completed).length}
             </div>
-            <div className="stat-card">
-              <div className="stat-value">
-                {registrations.filter(r => r.pgr_registration_process_completed).length}
-              </div>
-              <div className="stat-label">Completed Processes</div>
-            </div>
+            <div className="stats-label">Completed Processes</div>
           </div>
         </div>
       )}
@@ -900,149 +984,226 @@ const StudentDashboard = () => {
   );
 
   const renderProfile = () => (
-    <div className="profile-content">
-      <div className="profile-header">
-        <h1>Profile Management</h1>
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Profile Management</h1>
+        <p className="page-subtitle">Manage your account information and security settings</p>
       </div>
 
       {successMessage && (
-        <div className="success-message">
-          {successMessage}
+        <div className="alert alert-success">
+          <div className="alert-icon">✅</div>
+          <div className="alert-content">{successMessage}</div>
         </div>
       )}
 
-      {/* Profile Update Form */}
-      <div className="profile-section">
-        <h2>Update Profile</h2>
+      {/* Profile Update Card */}
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Update Profile</h2>
+          <span className="card-subtitle">Update your personal information</span>
+        </div>
+        
         {profileError && (
-          <div className="error-message">
-            {profileError}
+          <div className="alert alert-error">
+            <div className="alert-icon">⚠️</div>
+            <div className="alert-content">{profileError}</div>
           </div>
         )}
         
         <form onSubmit={handleProfileUpdate} className="profile-form">
           <div className="form-group">
-            <label>Username:</label>
+            <label className="form-label">
+              <span className="label-icon">👤</span>
+              Username
+            </label>
             <input
               type="text"
               value={profileData.username}
               onChange={(e) => setProfileData({...profileData, username: e.target.value})}
+              className="form-input"
+              placeholder="Enter your username"
               required
             />
           </div>
           
           <div className="form-group">
-            <label>Email:</label>
+            <label className="form-label">
+              <span className="label-icon">📧</span>
+              Email Address
+            </label>
             <input
               type="email"
               value={profileData.email}
               onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+              className="form-input"
+              placeholder="Enter your email address"
               required
             />
           </div>
           
           <div className="form-row">
             <div className="form-group">
-              <label>First Name:</label>
+              <label className="form-label">
+                <span className="label-icon">📝</span>
+                First Name
+              </label>
               <input
                 type="text"
                 value={profileData.first_name}
                 onChange={(e) => setProfileData({...profileData, first_name: e.target.value})}
+                className="form-input"
+                placeholder="Enter your first name"
                 required
               />
             </div>
             
             <div className="form-group">
-              <label>Last Name:</label>
+              <label className="form-label">
+                <span className="label-icon">📝</span>
+                Last Name
+              </label>
               <input
                 type="text"
                 value={profileData.last_name}
                 onChange={(e) => setProfileData({...profileData, last_name: e.target.value})}
+                className="form-input"
+                placeholder="Enter your last name"
                 required
               />
             </div>
           </div>
           
           <div className="form-group">
-            <label>Department:</label>
+            <label className="form-label">
+              <span className="label-icon">🏢</span>
+              Department
+            </label>
             <input
               type="text"
               value={profileData.department}
               onChange={(e) => setProfileData({...profileData, department: e.target.value})}
+              className="form-input"
+              placeholder="Enter your department"
             />
           </div>
           
           <div className="form-group">
-            <label>Phone Number:</label>
+            <label className="form-label">
+              <span className="label-icon">📞</span>
+              Phone Number
+            </label>
             <input
               type="tel"
               value={profileData.phone_number}
               onChange={(e) => setProfileData({...profileData, phone_number: e.target.value})}
+              className="form-input"
+              placeholder="Enter your phone number"
             />
           </div>
           
           <div className="form-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={profileData.is_active}
-                onChange={(e) => setProfileData({...profileData, is_active: e.target.checked})}
-              />
-              Active Account
+            <label className="form-label">
+              <span className="label-icon">✅</span>
+              Account Status
             </label>
+            <div className="checkbox-wrapper">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={profileData.is_active}
+                  onChange={(e) => setProfileData({...profileData, is_active: e.target.checked})}
+                  className="form-checkbox"
+                />
+                <span className="checkbox-text">Active Account</span>
+              </label>
+            </div>
           </div>
           
-          <button type="submit" className="btn btn-primary">
-            Update Profile
-          </button>
+          <div className="form-actions">
+            <button 
+              type="submit" 
+              className="btn btn-primary"
+              disabled={profileLoading}
+            >
+              {profileLoading ? 'Updating...' : 'Update Profile'}
+            </button>
+          </div>
         </form>
       </div>
 
-      {/* Password Change Form */}
-      <div className="profile-section">
-        <h2>Change Password</h2>
+      {/* Password Change Card */}
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Change Password</h2>
+          <span className="card-subtitle">Update your account security</span>
+        </div>
+        
         {passwordError && (
-          <div className="error-message">
-            {passwordError}
+          <div className="alert alert-error">
+            <div className="alert-icon">⚠️</div>
+            <div className="alert-content">{passwordError}</div>
           </div>
         )}
         
         <form onSubmit={handlePasswordChange} className="password-form">
           <div className="form-group">
-            <label>Current Password:</label>
+            <label className="form-label">
+              <span className="label-icon">🔐</span>
+              Current Password
+            </label>
             <input
               type="password"
               value={passwordData.current_password}
               onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
+              className="form-input"
+              placeholder="Enter your current password"
               required
             />
           </div>
           
           <div className="form-group">
-            <label>New Password:</label>
+            <label className="form-label">
+              <span className="label-icon">🔑</span>
+              New Password
+            </label>
             <input
               type="password"
               value={passwordData.new_password}
               onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
+              className="form-input"
+              placeholder="Enter your new password (minimum 6 characters)"
               required
               minLength="6"
             />
           </div>
           
           <div className="form-group">
-            <label>Confirm New Password:</label>
+            <label className="form-label">
+              <span className="label-icon">🔑</span>
+              Confirm New Password
+            </label>
             <input
               type="password"
               value={passwordData.confirm_password}
               onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})}
+              className="form-input"
+              placeholder="Confirm your new password"
               required
               minLength="6"
             />
           </div>
           
-          <button type="submit" className="btn btn-primary">
-            Change Password
-          </button>
+          <div className="form-actions">
+            <button 
+              type="submit" 
+              className="btn btn-secondary"
+              disabled={passwordLoading}
+            >
+              {passwordLoading ? 'Changing...' : 'Change Password'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -1074,14 +1235,19 @@ const StudentDashboard = () => {
     ];
 
     return (
-      <div className="student-dashboard-content">
-        <div className="section-header">
-          <h1>Academic Progress Tracking</h1>
-          <p>Track your progression through registration, progression, and final stages</p>
+      <div className="main-content">
+        {/* Page Header */}
+        <div className="page-header">
+          <h1 className="page-title">Academic Progress Tracking</h1>
+          <p className="page-subtitle">Track your progression through registration, progression, and final stages</p>
         </div>
 
-        <div className="progress-tracker-container">
-          {/* Progress Timeline */}
+        {/* Progress Timeline Card */}
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h2 className="card-title">Progress Timeline</h2>
+            <span className="card-subtitle">Your academic journey overview</span>
+          </div>
           <div className="progress-timeline">
             {stages.map((stage, index) => {
               const status = getStageStatus(stage.key);
@@ -1100,7 +1266,7 @@ const StudentDashboard = () => {
                   </div>
                   <div className="timeline-content">
                     <h3>{stage.title}</h3>
-                    <span className={`timeline-status status-${status.toLowerCase().replace(' ', '-')}`}>
+                    <span className={`status-badge ${status.toLowerCase().replace(' ', '-')}`}>
                       {status}
                     </span>
                   </div>
@@ -1111,8 +1277,14 @@ const StudentDashboard = () => {
               );
             })}
           </div>
+        </div>
 
-          {/* Stage Cards */}
+        {/* Stage Details Cards */}
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h2 className="card-title">Stage Details</h2>
+            <span className="card-subtitle">Detailed information about each academic stage</span>
+          </div>
           <div className="stages-grid">
             {stages.map((stage, index) => {
               const status = getStageStatus(stage.key);
@@ -1216,7 +1388,7 @@ const StudentDashboard = () => {
                                   }}
                                   title="View Details"
                                 >
-                                  👁️
+                                  View
                                 </button>
                               </div>
                             ))}
@@ -1240,7 +1412,6 @@ const StudentDashboard = () => {
                           className="btn-stage-action"
                           onClick={() => handleStageSubmissionCreate(stage.key)}
                         >
-                          <span className="action-icon">�</span>
                           <span className="action-text">Upload Documents</span>
                         </button>
                       </div>
@@ -1261,12 +1432,14 @@ const StudentDashboard = () => {
   };
 
   const renderSubmissions = () => (
-    <div className="student-dashboard-content">
-      <div className="section-header">
-        <h1>My Submissions</h1>
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">My Submissions</h1>
+        <p className="page-subtitle">Manage and track your academic document submissions</p>
         <div className="header-actions">
           <button 
-            className="btn btn-primary"
+            className="btn primary"
             onClick={() => setShowCreateSubmissionModal(true)}
           >
             📝 New Submission
@@ -1275,175 +1448,124 @@ const StudentDashboard = () => {
       </div>
 
       {submissionError && (
-        <div className="error-message">
-          {submissionError}
+        <div className="alert alert-error">
+          <div className="alert-icon">⚠️</div>
+          <div className="alert-content">{submissionError}</div>
         </div>
       )}
 
-      <div className="submissions-container">
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Submission Records</h2>
+        </div>
         {submissionsLoading ? (
-          <div className="loading">Loading submissions...</div>
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Loading submissions...</div>
+          </div>
         ) : (
-          <div className="submissions-table-wrapper">
-            <table className="submissions-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Details</th>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th>Dates</th>
-                  <th>File</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {submissions.map((submission) => (
-                  <tr key={submission.id}>
-                    <td className="submission-id">#{submission.id}</td>
-                    <td className="submission-details">
-                      <div className="submission-info">
-                        <div className="submission-title">{submission.title}</div>
-                        {submission.description && (
-                          <div className="submission-desc">
-                            {submission.description.length > 60 
-                              ? submission.description.substring(0, 60) + '...'
-                              : submission.description
-                            }
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="submission-type-cell">
-                      <span className={`type-badge type-${submission.submission_type}`}>
-                        {submission.submission_type === 'registration' ? '📋 REG' :
-                         submission.submission_type === 'viva_document' ? '📄 VIVA' :
-                         submission.submission_type === 'thesis' ? '📚 THESIS' :
-                         submission.submission_type === 'correction' ? '✏️ CORR' :
-                         submission.submission_type === 'annual_report' ? '📊 REPORT' :
-                         submission.submission_type.replace('_', ' ').toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="submission-status-cell">
-                      <span className={`status-badge submission-status-${submission.status}`}>
-                        {submission.status === 'draft' && '📝'}
-                        {submission.status === 'submitted' && '📤'}
-                        {submission.status === 'under_review' && '🔍'}
-                        {submission.status === 'approved' && '✅'}
-                        {submission.status === 'rejected' && '❌'}
-                        {submission.status === 'revision_required' && '🔄'}
-                        <span className="status-text">
-                          {submission.status.replace('_', ' ')}
-                        </span>
-                      </span>
-                    </td>
-                    <td className="submission-dates">
-                      <div className="dates-info">
-                        <div className="date-item">
-                          <span className="date-label">Submitted:</span>
-                          <span className="date-value">
-                            {submission.submission_date 
-                              ? new Date(submission.submission_date).toLocaleDateString('en-GB')
-                              : 'Not yet'
-                            }
-                          </span>
+          <table className="dashboard-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Details</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Dates</th>
+                <th>File</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {submissions.map((submission) => (
+                <tr key={submission.id}>
+                  <td><strong>#{submission.id}</strong></td>
+                  <td>
+                    <div className="submission-details">
+                      <div className="submission-title">{submission.title}</div>
+                      {submission.description && (
+                        <div className="submission-desc">
+                          {submission.description.length > 60 
+                            ? submission.description.substring(0, 60) + '...'
+                            : submission.description
+                          }
                         </div>
-                        <div className="date-item">
-                          <span className="date-label">Deadline:</span>
-                          <span className="date-value">
-                            {submission.review_deadline 
-                              ? new Date(submission.review_deadline).toLocaleDateString('en-GB')
-                              : 'Not set'
-                            }
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="submission-file">
-                      {submission.file_name ? (
-                        <div className="file-info-compact">
-                          <div className="file-name">📄 {submission.file_name.length > 15 ? submission.file_name.substring(0, 15) + '...' : submission.file_name}</div>
-                          <div className="file-meta">
-                            {submission.file_size && (
-                              <span className="file-size">
-                                {Math.round(submission.file_size / 1024)} KB
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="no-file">No file</span>
                       )}
-                    </td>
-                    <td className="submission-actions">
-                      <div className="action-buttons-compact">
-                        <button 
-                          className="btn-compact btn-view"
-                          onClick={() => {
-                            setSelectedSubmission(submission);
-                            setShowSubmissionDetailModal(true);
-                          }}
-                          title="View Details"
-                        >
-                          👁️
-                        </button>
-                        
-                        {submission.status === 'draft' && (
-                          <>
-                            <button 
-                              className="btn-compact btn-upload"
-                              onClick={() => {
-                                setSelectedSubmission(submission);
-                                setShowFileUploadModal(true);
-                              }}
-                              title="Upload File"
-                            >
-                              📎
-                            </button>
-                            <button 
-                              className="btn-compact btn-submit"
-                              onClick={() => handleSubmitForReview(submission.id)}
-                              disabled={!submission.file_name}
-                              title={!submission.file_name ? "Please upload a file first" : "Submit for review"}
-                            >
-                              📤
-                            </button>
-                          </>
-                        )}
-                        
-                        {submission.status === 'revision_required' && (
-                          <>
-                            <button 
-                              className="btn-compact btn-revision"
-                              onClick={() => {
-                                setSelectedSubmission(submission);
-                                setShowFileUploadModal(true);
-                              }}
-                              title="Upload Revision"
-                            >
-                              🔄
-                            </button>
-                            <button 
-                              className="btn-compact btn-submit"
-                              onClick={() => handleSubmitForReview(submission.id)}
-                              title="Resubmit"
-                            >
-                              📤
-                            </button>
-                          </>
-                        )}
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`status-badge type-${submission.submission_type}`}>
+                      {submission.submission_type === 'registration' ? '📋' :
+                       submission.submission_type === 'viva_document' ? '📄' :
+                       submission.submission_type === 'thesis' ? '📚' :
+                       submission.submission_type === 'correction' ? '✏️' :
+                       submission.submission_type === 'annual_report' ? '📊' : '📄'}
+                      {' ' + submission.submission_type.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`status-badge ${submission.status}`}>
+                      {submission.status === 'draft' && '📝'}
+                      {submission.status === 'submitted' && '📤'}
+                      {submission.status === 'under_review' && '🔍'}
+                      {submission.status === 'approved' && '✅'}
+                      {submission.status === 'rejected' && '❌'}
+                      {submission.status === 'revision_required' && '🔄'}
+                      {' ' + submission.status.replace('_', ' ')}
+                    </span>
+                  </td>
+                  <td>
+                    <div>
+                      <strong>Created:</strong> {new Date(submission.created_date).toLocaleDateString('en-GB')}
+                    </div>
+                    <div>
+                      <strong>Updated:</strong> {new Date(submission.updated_date).toLocaleDateString('en-GB')}
+                    </div>
+                  </td>
+                  <td>
+                    {submission.file_path ? (
+                      <div className="file-info">
+                        <span className="file-icon">📎</span>
+                        <span className="file-name">{submission.file_path.split('/').pop()}</span>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            
-            {submissions.length === 0 && (
-              <div className="no-data">
-                No submissions found. Create your first submission using the "New Submission" button above.
-              </div>
-            )}
+                    ) : (
+                      <span className="no-file">No file</span>
+                    )}
+                  </td>
+                  <td>
+                    <div className="action-buttons">
+                      <button 
+                        className="btn secondary btn-sm"
+                        onClick={() => {
+                          setSelectedSubmission(submission);
+                          setShowSubmissionDetailModal(true);
+                        }}
+                        title="View Details"
+                      >
+                        View
+                      </button>
+                      {submission.status === 'draft' && (
+                        <button 
+                          className="btn primary btn-sm"
+                          onClick={() => handleSubmitForReview(submission.id)}
+                          title="Submit for Review"
+                        >
+                          Submit
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        
+        {!submissionsLoading && submissions.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-state-icon">📄</div>
+            <div className="empty-state-title">No Submissions Found</div>
+            <div className="empty-state-description">Create your first submission using the "New Submission" button above</div>
           </div>
         )}
       </div>
@@ -1451,15 +1573,21 @@ const StudentDashboard = () => {
   );
 
   const renderVivaTeams = () => (
-    <div className="student-dashboard-content">
-      <div className="section-header">
-        <h1>My Viva Teams</h1>
-        <p>View your viva team assignments and examination status</p>
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">My Viva Teams</h1>
+        <p className="page-subtitle">View your viva team assignments and examination status</p>
       </div>
 
-      <div className="viva-teams-container">
-        <div className="viva-teams-table-wrapper">
-          <table className="viva-teams-table">
+      {/* Viva Teams Table */}
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Viva Team Assignments</h2>
+          <span className="card-subtitle">{Array.isArray(vivaTeams) ? vivaTeams.length : 0} teams assigned</span>
+        </div>
+        {Array.isArray(vivaTeams) && vivaTeams.length > 0 ? (
+          <table className="dashboard-table">
             <thead>
               <tr>
                 <th>ID</th>
@@ -1473,11 +1601,11 @@ const StudentDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {Array.isArray(vivaTeams) && vivaTeams.map(vivaTeam => (
+              {vivaTeams.map(vivaTeam => (
                 <tr key={vivaTeam.id}>
-                  <td className="team-id">{vivaTeam.id}</td>
+                  <td className="team-id"><strong>#{vivaTeam.id}</strong></td>
                   <td>
-                    <span className={`stage-badge stage-${vivaTeam.stage}`}>
+                    <span className={`status-badge stage-${vivaTeam.stage}`}>
                       {vivaTeam.stage.charAt(0).toUpperCase() + vivaTeam.stage.slice(1)}
                     </span>
                   </td>
@@ -1537,21 +1665,21 @@ const StudentDashboard = () => {
                         setSelectedVivaTeam(vivaTeam);
                         setShowVivaTeamModal(true);
                       }}
-                      className="btn-compact btn-view"
+                      className="btn secondary btn-sm"
                       title="View Details"
                     >
-                      👁️
+                      View
                     </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-        
-        {Array.isArray(vivaTeams) && vivaTeams.length === 0 && (
-          <div className="no-data">
-            No viva teams found. Your supervisors will propose viva teams when you're ready for examination.
+        ) : (
+          <div className="empty-state">
+            <div className="empty-state-icon">👥</div>
+            <div className="empty-state-title">No Viva Teams Found</div>
+            <div className="empty-state-description">Your supervisors will propose viva teams when you're ready for examination.</div>
           </div>
         )}
       </div>
@@ -1579,42 +1707,60 @@ const StudentDashboard = () => {
 
   if (loading) {
     return (
-      <div className="student-layout">
+      <div className="dashboard-layout">
         <div className="loading">Loading student dashboard...</div>
       </div>
     );
   }
 
   return (
-    <div className="student-layout">
+    <div className="dashboard-layout">
       {renderNavigation()}
       
-      <main className="student-main">
-        {error && (
-          <div className="error-message">
-            {error}
+      <main className="dashboard-main">
+        {/* Main Header */}
+        <div className="main-header">
+          <h1 className="header-title">
+            {activeSection === 'dashboard' && 'Student Dashboard'}
+            {activeSection === 'progress' && 'Progress Tracking'}
+            {activeSection === 'submissions' && 'Submissions'}
+            {activeSection === 'registrations' && 'Registrations'}
+            {activeSection === 'viva-teams' && 'Viva Teams'}
+            {activeSection === 'profile' && 'Profile'}
+          </h1>
+          <div className="header-actions">
+            <span>Welcome, {user?.first_name || user?.username}</span>
           </div>
-        )}
+        </div>
         
-        {renderContent()}
+        {/* Main Content */}
+        <div className="main-content">
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+          
+          {renderContent()}
+        </div>
       </main>
 
       {/* Extension Request Modal */}
       {showExtensionModal && (
-        <div className="modal">
+        <div className="modal-overlay show">
           <div className="modal-content">
             <div className="modal-header">
-              <h3>Request Registration Extension</h3>
-              <span 
-                className="close" 
+              <h3 className="modal-title">Request Registration Extension</h3>
+              <button 
+                className="modal-close" 
                 onClick={() => {
                   setShowExtensionModal(false);
                   setExtensionRequest({ extension_days: '', reason: '' });
                   setExtensionError('');
                 }}
               >
-                &times;
-              </span>
+                <i className="fas fa-times"></i>
+              </button>
             </div>
             <div className="modal-body">
               {extensionError && (
@@ -1624,8 +1770,9 @@ const StudentDashboard = () => {
               )}
               
               <div className="form-group">
-                <label>Extension Days (1-365):</label>
+                <label className="form-label">Extension Days (1-365):</label>
                 <input
+                  className="form-input"
                   type="number"
                   min="1"
                   max="365"
@@ -1639,8 +1786,9 @@ const StudentDashboard = () => {
               </div>
               
               <div className="form-group">
-                <label>Reason for Extension:</label>
+                <label className="form-label">Reason for Extension:</label>
                 <textarea
+                  className="form-input"
                   value={extensionRequest.reason}
                   onChange={(e) => setExtensionRequest({
                     ...extensionRequest, 
@@ -1652,6 +1800,7 @@ const StudentDashboard = () => {
                 />
               </div>
             </div>
+            
             <div className="modal-footer">
               <button 
                 onClick={() => {
@@ -1676,29 +1825,29 @@ const StudentDashboard = () => {
 
       {/* All Supervisors Modal */}
       {showSupervisorModal && (
-        <div className="modal">
+        <div className="modal-overlay show">
           <div className="modal-content large">
             <div className="modal-header">
-              <h3>All Available Supervisors</h3>
-              <span 
-                className="close" 
+              <h3 className="modal-title">All Available Supervisors</h3>
+              <button 
+                className="modal-close" 
                 onClick={() => {
                   setShowSupervisorModal(false);
                   setSelectedSupervisor(null);
                 }}
               >
-                &times;
-              </span>
+                <i className="fas fa-times"></i>
+              </button>
             </div>
             <div className="modal-body">
-              <div className="supervisors-grid">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {allSupervisors.map(supervisor => (
                   <div 
                     key={supervisor.supervisor_id} 
-                    className="supervisor-card clickable"
+                    className="dashboard-card clickable cursor-pointer hover:shadow-lg transition-shadow"
                     onClick={() => setSelectedSupervisor(supervisor)}
                   >
-                    <h4>{supervisor.supervisor_name}</h4>
+                    <h4 className="font-semibold">{supervisor.supervisor_name}</h4>
                     <p><strong>Email:</strong> {supervisor.email}</p>
                     <p><strong>Department:</strong> {supervisor.department}</p>
                     {supervisor.supervisor_notes && (
@@ -1732,39 +1881,38 @@ const StudentDashboard = () => {
 
       {/* Viva Team Detail Modal */}
       {showVivaTeamModal && selectedVivaTeam && (
-        <div className="modal">
-          <div className="modal-content large">
+        <div className="modal-overlay show" onClick={() => {
+          setShowVivaTeamModal(false);
+          setSelectedVivaTeam(null);
+        }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Viva Team Details</h3>
-              <span 
-                className="close" 
+              <h3 className="modal-title">Viva Team Details</h3>
+              <button 
+                className="modal-close" 
                 onClick={() => {
                   setShowVivaTeamModal(false);
                   setSelectedVivaTeam(null);
                 }}
               >
-                &times;
-              </span>
+                <i className="fas fa-times"></i>
+              </button>
             </div>
             <div className="modal-body">
-              <div className="detail-grid">
-                <div className="detail-item">
-                  <label>Team ID:</label>
-                  <span>{selectedVivaTeam.id}</span>
+              <div className="detail-content">
+                <div className="detail-row">
+                  <strong>Team ID:</strong> {selectedVivaTeam.id}
                 </div>
-                <div className="detail-item">
-                  <label>Student Number:</label>
-                  <span>{selectedVivaTeam.student_number}</span>
+                <div className="detail-row">
+                  <strong>Student Number:</strong> {selectedVivaTeam.student_number}
                 </div>
-                <div className="detail-item">
-                  <label>Stage:</label>
-                  <span className={`status stage-${selectedVivaTeam.stage}`}>
+                <div className="detail-row">
+                  <strong>Stage:</strong> <span className={`status stage-${selectedVivaTeam.stage}`}>
                     {selectedVivaTeam.stage.charAt(0).toUpperCase() + selectedVivaTeam.stage.slice(1)}
                   </span>
                 </div>
-                <div className="detail-item">
-                  <label>Status:</label>
-                  <span className={`status ${selectedVivaTeam.status}`}>
+                <div className="detail-row">
+                  <strong>Status:</strong> <span className={`status ${selectedVivaTeam.status}`}>
                     {selectedVivaTeam.status === 'proposed' ? '📋 Proposed' :
                      selectedVivaTeam.status === 'approved' ? '✅ Approved' :
                      selectedVivaTeam.status === 'rejected' ? '❌ Rejected' :
@@ -1776,81 +1924,65 @@ const StudentDashboard = () => {
                 
                 <div className="detail-section">
                   <h4>Examiner Information</h4>
-                  <div className="detail-item">
-                    <label>Internal Examiner 1 ID:</label>
-                    <span>{selectedVivaTeam.internal_examiner_1_id || 'Not assigned'}</span>
+                  <div className="detail-row">
+                    <strong>Internal Examiner 1 ID:</strong> {selectedVivaTeam.internal_examiner_1_id || 'Not assigned'}
                   </div>
-                  <div className="detail-item">
-                    <label>Internal Examiner 2 ID:</label>
-                    <span>{selectedVivaTeam.internal_examiner_2_id || 'Not assigned'}</span>
+                  <div className="detail-row">
+                    <strong>Internal Examiner 2 ID:</strong> {selectedVivaTeam.internal_examiner_2_id || 'Not assigned'}
                   </div>
-                  <div className="detail-item">
-                    <label>External Examiner Name:</label>
-                    <span>{selectedVivaTeam.external_examiner_name || 'Not assigned'}</span>
+                  <div className="detail-row">
+                    <strong>External Examiner Name:</strong> {selectedVivaTeam.external_examiner_name || 'Not assigned'}
                   </div>
-                  <div className="detail-item">
-                    <label>External Examiner Email:</label>
-                    <span>{selectedVivaTeam.external_examiner_email || 'Not provided'}</span>
+                  <div className="detail-row">
+                    <strong>External Examiner Email:</strong> {selectedVivaTeam.external_examiner_email || 'Not provided'}
                   </div>
-                  <div className="detail-item">
-                    <label>External Examiner Institution:</label>
-                    <span>{selectedVivaTeam.external_examiner_institution || 'Not provided'}</span>
+                  <div className="detail-row">
+                    <strong>External Examiner Institution:</strong> {selectedVivaTeam.external_examiner_institution || 'Not provided'}
                   </div>
                 </div>
                 
                 <div className="detail-section">
                   <h4>Scheduling Information</h4>
-                  <div className="detail-item">
-                    <label>Proposed Date:</label>
-                    <span>{selectedVivaTeam.proposed_date ? new Date(selectedVivaTeam.proposed_date).toLocaleDateString() : 'Not set'}</span>
+                  <div className="detail-row">
+                    <strong>Proposed Date:</strong> {selectedVivaTeam.proposed_date ? new Date(selectedVivaTeam.proposed_date).toLocaleDateString() : 'Not set'}
                   </div>
-                  <div className="detail-item">
-                    <label>Scheduled Date:</label>
-                    <span>{selectedVivaTeam.scheduled_date ? new Date(selectedVivaTeam.scheduled_date).toLocaleDateString() : 'Not scheduled'}</span>
+                  <div className="detail-row">
+                    <strong>Scheduled Date:</strong> {selectedVivaTeam.scheduled_date ? new Date(selectedVivaTeam.scheduled_date).toLocaleDateString() : 'Not scheduled'}
                   </div>
-                  <div className="detail-item">
-                    <label>Actual Date:</label>
-                    <span>{selectedVivaTeam.actual_date ? new Date(selectedVivaTeam.actual_date).toLocaleDateString() : 'Not completed'}</span>
+                  <div className="detail-row">
+                    <strong>Actual Date:</strong> {selectedVivaTeam.actual_date ? new Date(selectedVivaTeam.actual_date).toLocaleDateString() : 'Not completed'}
                   </div>
-                  <div className="detail-item">
-                    <label>Location:</label>
-                    <span>{selectedVivaTeam.location || 'Not specified'}</span>
+                  <div className="detail-row">
+                    <strong>Location:</strong> {selectedVivaTeam.location || 'Not specified'}
                   </div>
                 </div>
                 
                 <div className="detail-section">
                   <h4>Results & Outcome</h4>
-                  <div className="detail-item">
-                    <label>Outcome:</label>
-                    <span>{selectedVivaTeam.outcome || 'Pending'}</span>
+                  <div className="detail-row">
+                    <strong>Outcome:</strong> {selectedVivaTeam.outcome || 'Pending'}
                   </div>
-                  <div className="detail-item">
-                    <label>Outcome Notes:</label>
-                    <span>{selectedVivaTeam.outcome_notes || 'No notes available'}</span>
+                  <div className="detail-row">
+                    <strong>Outcome Notes:</strong> {selectedVivaTeam.outcome_notes || 'No notes available'}
                   </div>
                 </div>
                 
                 <div className="detail-section">
                   <h4>Administrative Information</h4>
-                  <div className="detail-item">
-                    <label>Proposed By:</label>
-                    <span>User ID: {selectedVivaTeam.proposed_by || 'Unknown'}</span>
+                  <div className="detail-row">
+                    <strong>Proposed By:</strong> User ID: {selectedVivaTeam.proposed_by || 'Unknown'}
                   </div>
-                  <div className="detail-item">
-                    <label>Approved By:</label>
-                    <span>User ID: {selectedVivaTeam.approved_by || 'Not approved yet'}</span>
+                  <div className="detail-row">
+                    <strong>Approved By:</strong> User ID: {selectedVivaTeam.approved_by || 'Not approved yet'}
                   </div>
-                  <div className="detail-item">
-                    <label>Approval Date:</label>
-                    <span>{selectedVivaTeam.approval_date ? new Date(selectedVivaTeam.approval_date).toLocaleString() : 'Not approved yet'}</span>
+                  <div className="detail-row">
+                    <strong>Approval Date:</strong> {selectedVivaTeam.approval_date ? new Date(selectedVivaTeam.approval_date).toLocaleString() : 'Not approved yet'}
                   </div>
-                  <div className="detail-item">
-                    <label>Created Date:</label>
-                    <span>{selectedVivaTeam.created_date ? new Date(selectedVivaTeam.created_date).toLocaleString() : 'Unknown'}</span>
+                  <div className="detail-row">
+                    <strong>Created Date:</strong> {selectedVivaTeam.created_date ? new Date(selectedVivaTeam.created_date).toLocaleString() : 'Unknown'}
                   </div>
-                  <div className="detail-item">
-                    <label>Last Updated:</label>
-                    <span>{selectedVivaTeam.updated_date ? new Date(selectedVivaTeam.updated_date).toLocaleString() : 'Unknown'}</span>
+                  <div className="detail-row">
+                    <strong>Last Updated:</strong> {selectedVivaTeam.updated_date ? new Date(selectedVivaTeam.updated_date).toLocaleString() : 'Unknown'}
                   </div>
                 </div>
               </div>
@@ -1872,12 +2004,20 @@ const StudentDashboard = () => {
 
       {/* Create Submission Modal */}
       {showCreateSubmissionModal && (
-        <div className="modal">
-          <div className="modal-content">
+        <div className="modal-overlay show" onClick={() => {
+          setShowCreateSubmissionModal(false);
+          setSubmissionForm({
+            submission_type: 'registration',
+            title: '',
+            description: ''
+          });
+          setSubmissionError('');
+        }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Create New Submission</h3>
-              <span 
-                className="close" 
+              <h3 className="modal-title">Create New Submission</h3>
+              <button 
+                className="modal-close" 
                 onClick={() => {
                   setShowCreateSubmissionModal(false);
                   setSubmissionForm({
@@ -1888,8 +2028,8 @@ const StudentDashboard = () => {
                   setSubmissionError('');
                 }}
               >
-                &times;
-              </span>
+                <i className="fas fa-times"></i>
+              </button>
             </div>
             <div className="modal-body">
               {submissionError && (
@@ -1897,10 +2037,12 @@ const StudentDashboard = () => {
                   {submissionError}
                 </div>
               )}
+              
               <form onSubmit={handleCreateSubmission}>
                 <div className="form-group">
-                  <label>Submission Type:</label>
+                  <label className="form-label">Submission Type:</label>
                   <select
+                    className="form-input"
                     value={submissionForm.submission_type}
                     onChange={(e) => setSubmissionForm({...submissionForm, submission_type: e.target.value})}
                     required
@@ -1912,19 +2054,23 @@ const StudentDashboard = () => {
                     <option value="annual_report">Annual Report</option>
                   </select>
                 </div>
+                
                 <div className="form-group">
-                  <label>Title:</label>
+                  <label className="form-label">Title:</label>
                   <input
                     type="text"
+                    className="form-input"
                     value={submissionForm.title}
                     onChange={(e) => setSubmissionForm({...submissionForm, title: e.target.value})}
                     required
                     placeholder="Enter submission title"
                   />
                 </div>
+                
                 <div className="form-group">
-                  <label>Description:</label>
+                  <label className="form-label">Description:</label>
                   <textarea
+                    className="form-input"
                     value={submissionForm.description}
                     onChange={(e) => setSubmissionForm({...submissionForm, description: e.target.value})}
                     required
@@ -1932,27 +2078,32 @@ const StudentDashboard = () => {
                     rows="4"
                   />
                 </div>
-                <div className="modal-footer">
-                  <button type="submit" className="btn btn-primary">
-                    Create Submission
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setShowCreateSubmissionModal(false);
-                      setSubmissionForm({
-                        submission_type: 'registration',
-                        title: '',
-                        description: ''
-                      });
-                      setSubmissionError('');
-                    }}
-                    className="btn btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                </div>
               </form>
+            </div>
+            
+            <div className="modal-footer">
+              <button 
+                type="button"
+                onClick={() => {
+                  setShowCreateSubmissionModal(false);
+                  setSubmissionForm({
+                    submission_type: 'registration',
+                    title: '',
+                    description: ''
+                  });
+                  setSubmissionError('');
+                }}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="btn btn-primary"
+                onClick={handleCreateSubmission}
+              >
+                Create Submission
+              </button>
             </div>
           </div>
         </div>
@@ -1960,12 +2111,17 @@ const StudentDashboard = () => {
 
       {/* File Upload Modal */}
       {showFileUploadModal && selectedSubmission && (
-        <div className="modal">
-          <div className="modal-content">
+        <div className="modal-overlay show" onClick={() => {
+          setShowFileUploadModal(false);
+          setSelectedSubmission(null);
+          setUploadFile(null);
+          setSubmissionError('');
+        }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Upload File for "{selectedSubmission.title}"</h3>
-              <span 
-                className="close" 
+              <h3 className="modal-title">Upload File for "{selectedSubmission.title}"</h3>
+              <button 
+                className="modal-close" 
                 onClick={() => {
                   setShowFileUploadModal(false);
                   setSelectedSubmission(null);
@@ -1973,8 +2129,8 @@ const StudentDashboard = () => {
                   setSubmissionError('');
                 }}
               >
-                &times;
-              </span>
+                <i className="fas fa-times"></i>
+              </button>
             </div>
             <div className="modal-body">
               {submissionError && (
@@ -1982,11 +2138,13 @@ const StudentDashboard = () => {
                   {submissionError}
                 </div>
               )}
+              
               <form onSubmit={handleFileUpload}>
                 <div className="form-group">
-                  <label>Select File:</label>
+                  <label className="form-label">Select File:</label>
                   <input
                     type="file"
+                    className="form-input"
                     onChange={(e) => setUploadFile(e.target.files[0])}
                     required
                     accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
@@ -1995,30 +2153,43 @@ const StudentDashboard = () => {
                     Supported formats: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG
                   </small>
                 </div>
+                
                 {uploadFile && (
                   <div className="file-preview">
-                    <p><strong>Selected file:</strong> {uploadFile.name}</p>
-                    <p><strong>Size:</strong> {Math.round(uploadFile.size / 1024)} KB</p>
+                    <div className="detail-item">
+                      <label>Selected File:</label>
+                      <span>{uploadFile.name}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>File Size:</label>
+                      <span>{Math.round(uploadFile.size / 1024)} KB</span>
+                    </div>
                   </div>
                 )}
-                <div className="modal-footer">
-                  <button type="submit" className="btn btn-primary">
-                    Upload File
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setShowFileUploadModal(false);
-                      setSelectedSubmission(null);
-                      setUploadFile(null);
-                      setSubmissionError('');
-                    }}
-                    className="btn btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                </div>
               </form>
+            </div>
+            
+            <div className="modal-footer">
+              <button 
+                type="button"
+                onClick={() => {
+                  setShowFileUploadModal(false);
+                  setSelectedSubmission(null);
+                  setUploadFile(null);
+                  setSubmissionError('');
+                }}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="btn btn-primary"
+                onClick={handleFileUpload}
+                disabled={!uploadFile}
+              >
+                Upload File
+              </button>
             </div>
           </div>
         </div>
@@ -2026,45 +2197,43 @@ const StudentDashboard = () => {
 
       {/* Submission Detail Modal */}
       {showSubmissionDetailModal && selectedSubmission && (
-        <div className="modal">
-          <div className="modal-content large">
+        <div className="modal-overlay show" onClick={() => {
+          setShowSubmissionDetailModal(false);
+          setSelectedSubmission(null);
+        }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Submission Details - ID #{selectedSubmission.id}</h3>
-              <span 
-                className="close" 
+              <h3 className="modal-title">Submission Details - ID #{selectedSubmission.id}</h3>
+              <button 
+                className="modal-close" 
                 onClick={() => {
                   setShowSubmissionDetailModal(false);
                   setSelectedSubmission(null);
                 }}
               >
-                &times;
-              </span>
+                <i className="fas fa-times"></i>
+              </button>
             </div>
             <div className="modal-body">
-              <div className="detail-grid">
+              <div className="detail-content">
                 <div className="detail-section">
                   <h4>Basic Information</h4>
-                  <div className="detail-item">
-                    <label>ID:</label>
-                    <span>#{selectedSubmission.id}</span>
+                  <div className="detail-row">
+                    <strong>ID:</strong> #{selectedSubmission.id}
                   </div>
-                  <div className="detail-item">
-                    <label>Student Number:</label>
-                    <span>{selectedSubmission.student_number}</span>
+                  <div className="detail-row">
+                    <strong>Student Number:</strong> {selectedSubmission.student_number}
                   </div>
-                  <div className="detail-item">
-                    <label>Title:</label>
-                    <span>{selectedSubmission.title}</span>
+                  <div className="detail-row">
+                    <strong>Title:</strong> {selectedSubmission.title}
                   </div>
-                  <div className="detail-item">
-                    <label>Type:</label>
-                    <span className="submission-type">
+                  <div className="detail-row">
+                    <strong>Type:</strong> <span className="submission-type">
                       {selectedSubmission.submission_type.replace('_', ' ').toUpperCase()}
                     </span>
                   </div>
-                  <div className="detail-item">
-                    <label>Description:</label>
-                    <span className="submission-description">
+                  <div className="detail-row">
+                    <strong>Description:</strong> <span className="submission-description">
                       {selectedSubmission.description || 'No description provided'}
                     </span>
                   </div>
@@ -2072,9 +2241,8 @@ const StudentDashboard = () => {
 
                 <div className="detail-section">
                   <h4>Status & Timeline</h4>
-                  <div className="detail-item">
-                    <label>Current Status:</label>
-                    <span className={`status status-${selectedSubmission.status}`}>
+                  <div className="detail-row">
+                    <strong>Current Status:</strong> <span className={`status status-${selectedSubmission.status}`}>
                       {selectedSubmission.status === 'draft' && '📝 Draft'}
                       {selectedSubmission.status === 'submitted' && '📤 Submitted'}
                       {selectedSubmission.status === 'under_review' && '🔍 Under Review'}
@@ -2083,31 +2251,23 @@ const StudentDashboard = () => {
                       {selectedSubmission.status === 'revision_required' && '🔄 Revision Required'}
                     </span>
                   </div>
-                  <div className="detail-item">
-                    <label>Submission Date:</label>
-                    <span>
-                      {selectedSubmission.submission_date 
-                        ? new Date(selectedSubmission.submission_date).toLocaleString()
-                        : 'Not submitted yet'
-                      }
-                    </span>
+                  <div className="detail-row">
+                    <strong>Submission Date:</strong> {selectedSubmission.submission_date 
+                      ? new Date(selectedSubmission.submission_date).toLocaleString()
+                      : 'Not submitted yet'
+                    }
                   </div>
-                  <div className="detail-item">
-                    <label>Review Deadline:</label>
-                    <span>
-                      {selectedSubmission.review_deadline 
-                        ? new Date(selectedSubmission.review_deadline).toLocaleDateString()
-                        : 'Not set'
-                      }
-                    </span>
+                  <div className="detail-row">
+                    <strong>Review Deadline:</strong> {selectedSubmission.review_deadline 
+                      ? new Date(selectedSubmission.review_deadline).toLocaleDateString()
+                      : 'Not set'
+                    }
                   </div>
-                  <div className="detail-item">
-                    <label>Created Date:</label>
-                    <span>{new Date(selectedSubmission.created_date).toLocaleString()}</span>
+                  <div className="detail-row">
+                    <strong>Created Date:</strong> {new Date(selectedSubmission.created_date).toLocaleString()}
                   </div>
-                  <div className="detail-item">
-                    <label>Last Updated:</label>
-                    <span>{new Date(selectedSubmission.updated_date).toLocaleString()}</span>
+                  <div className="detail-row">
+                    <strong>Last Updated:</strong> {new Date(selectedSubmission.updated_date).toLocaleString()}
                   </div>
                 </div>
 
@@ -2115,26 +2275,20 @@ const StudentDashboard = () => {
                   <h4>File Information</h4>
                   {selectedSubmission.file_name ? (
                     <>
-                      <div className="detail-item">
-                        <label>File Name:</label>
-                        <span className="file-name">📄 {selectedSubmission.file_name}</span>
+                      <div className="detail-row">
+                        <strong>File Name:</strong> <span className="file-name">📄 {selectedSubmission.file_name}</span>
                       </div>
-                      <div className="detail-item">
-                        <label>File Size:</label>
-                        <span>
-                          {selectedSubmission.file_size 
-                            ? `${Math.round(selectedSubmission.file_size / 1024)} KB` 
-                            : 'Unknown'
-                          }
-                        </span>
+                      <div className="detail-row">
+                        <strong>File Size:</strong> {selectedSubmission.file_size 
+                          ? `${Math.round(selectedSubmission.file_size / 1024)} KB` 
+                          : 'Unknown'
+                        }
                       </div>
-                      <div className="detail-item">
-                        <label>File Type:</label>
-                        <span>{selectedSubmission.mime_type || 'Unknown'}</span>
+                      <div className="detail-row">
+                        <strong>File Type:</strong> {selectedSubmission.mime_type || 'Unknown'}
                       </div>
-                      <div className="detail-item">
-                        <label>File Path:</label>
-                        <span className="file-path">{selectedSubmission.file_path}</span>
+                      <div className="detail-row">
+                        <strong>File Path:</strong> <span className="file-path">{selectedSubmission.file_path}</span>
                       </div>
                     </>
                   ) : (
@@ -2157,27 +2311,20 @@ const StudentDashboard = () => {
 
                 <div className="detail-section">
                   <h4>Review Information</h4>
-                  <div className="detail-item">
-                    <label>Reviewed By:</label>
-                    <span>
-                      {selectedSubmission.reviewed_by 
-                        ? `User ID: ${selectedSubmission.reviewed_by}` 
-                        : 'Not reviewed yet'
-                      }
-                    </span>
+                  <div className="detail-row">
+                    <strong>Reviewed By:</strong> {selectedSubmission.reviewed_by 
+                      ? `User ID: ${selectedSubmission.reviewed_by}` 
+                      : 'Not reviewed yet'
+                    }
                   </div>
-                  <div className="detail-item">
-                    <label>Review Date:</label>
-                    <span>
-                      {selectedSubmission.review_date 
-                        ? new Date(selectedSubmission.review_date).toLocaleString()
-                        : 'Not reviewed yet'
-                      }
-                    </span>
+                  <div className="detail-row">
+                    <strong>Review Date:</strong> {selectedSubmission.review_date 
+                      ? new Date(selectedSubmission.review_date).toLocaleString()
+                      : 'Not reviewed yet'
+                    }
                   </div>
-                  <div className="detail-item">
-                    <label>Review Comments:</label>
-                    <span className="review-comments">
+                  <div className="detail-row">
+                    <strong>Review Comments:</strong> <span className="review-comments">
                       {selectedSubmission.review_comments || 'No comments provided'}
                     </span>
                   </div>
@@ -2248,12 +2395,19 @@ const StudentDashboard = () => {
 
       {/* Stage-Specific Submission Modal */}
       {showStageSubmissionModal && (
-        <div className="modal">
-          <div className="modal-content">
+        <div className="modal-overlay show" onClick={() => {
+          setShowStageSubmissionModal(false);
+          setSubmissionForm({
+            submission_type: 'registration',
+            title: '',
+            description: ''
+          });
+        }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Create New Submission</h3>
-              <span 
-                className="close" 
+              <h3 className="modal-title">Create New Submission</h3>
+              <button 
+                className="modal-close" 
                 onClick={() => {
                   setShowStageSubmissionModal(false);
                   setSubmissionForm({
@@ -2264,8 +2418,8 @@ const StudentDashboard = () => {
                   setSubmissionError('');
                 }}
               >
-                &times;
-              </span>
+                <i className="fas fa-times"></i>
+              </button>
             </div>
             <div className="modal-body">
               {submissionError && (
@@ -2273,10 +2427,12 @@ const StudentDashboard = () => {
                   {submissionError}
                 </div>
               )}
+              
               <form onSubmit={handleCreateSubmission}>
                 <div className="form-group">
-                  <label>Submission Type:</label>
+                  <label className="form-label">Submission Type:</label>
                   <select
+                    className="form-input"
                     value={submissionForm.submission_type}
                     onChange={(e) => setSubmissionForm({...submissionForm, submission_type: e.target.value})}
                     required
@@ -2288,19 +2444,23 @@ const StudentDashboard = () => {
                     <option value="annual_report">Annual Report</option>
                   </select>
                 </div>
+                
                 <div className="form-group">
-                  <label>Title:</label>
+                  <label className="form-label">Title:</label>
                   <input
                     type="text"
+                    className="form-input"
                     value={submissionForm.title}
                     onChange={(e) => setSubmissionForm({...submissionForm, title: e.target.value})}
                     required
                     placeholder="Enter submission title"
                   />
                 </div>
+                
                 <div className="form-group">
-                  <label>Description:</label>
+                  <label className="form-label">Description:</label>
                   <textarea
+                    className="form-input"
                     value={submissionForm.description}
                     onChange={(e) => setSubmissionForm({...submissionForm, description: e.target.value})}
                     required
@@ -2308,27 +2468,32 @@ const StudentDashboard = () => {
                     rows="4"
                   />
                 </div>
-                <div className="modal-footer">
-                  <button type="submit" className="btn btn-primary">
-                    Create Submission
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setShowStageSubmissionModal(false);
-                      setSubmissionForm({
-                        submission_type: 'registration',
-                        title: '',
-                        description: ''
-                      });
-                      setSubmissionError('');
-                    }}
-                    className="btn btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                </div>
               </form>
+            </div>
+            
+            <div className="modal-footer">
+              <button 
+                type="button"
+                onClick={() => {
+                  setShowStageSubmissionModal(false);
+                  setSubmissionForm({
+                    submission_type: 'registration',
+                    title: '',
+                    description: ''
+                  });
+                  setSubmissionError('');
+                }}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="btn btn-primary"
+                onClick={handleCreateSubmission}
+              >
+                Create Submission
+              </button>
             </div>
           </div>
         </div>

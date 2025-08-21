@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Unauthorized from './pages/Unauthorized';
 import './styles/globals.css';
+import './styles/shared-dashboard.css';
 
 function App() {
   return (

@@ -2233,3 +2233,141 @@
   margin-top: auto;
   flex-shrink: 0;
 }
+
+/* Profile Page Styles */
+.profile-info-section {
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid var(--sys-admin-border);
+  margin-bottom: 1rem;
+}
+
+.profile-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--sys-admin-border);
+  transition: all 0.3s ease;
+}
+
+.profile-detail-row:last-child {
+  border-bottom: none;
+}
+
+.profile-detail-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+  margin: 0 -1rem;
+  padding: 1rem 1rem;
+}
+
+.profile-detail-label {
+  color: var(--sys-admin-text-muted);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 120px;
+}
+
+.profile-detail-value {
+  color: var(--sys-admin-text);
+  font-weight: 600;
+  text-align: right;
+  flex: 1;
+}
+
+.profile-actions-section {
+  padding: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.profile-action-btn {
+  flex: 1;
+  min-width: 180px;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.profile-action-btn:hover::before {
+  left: 100%;
+}
+
+.profile-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.profile-action-btn.btn.primary {
+  background: linear-gradient(135deg, var(--sys-admin-highlight), #c0392b);
+  color: white;
+}
+
+.profile-action-btn.btn.secondary {
+  background: linear-gradient(135deg, var(--sys-admin-accent), var(--sys-admin-secondary));
+  color: var(--sys-admin-text);
+  border: 1px solid var(--sys-admin-border);
+}
+
+.profile-action-btn.btn.primary:hover {
+  background: linear-gradient(135deg, #c0392b, var(--sys-admin-highlight));
+}
+
+.profile-action-btn.btn.secondary:hover {
+  background: linear-gradient(135deg, var(--sys-admin-secondary), var(--sys-admin-accent));
+  border-color: var(--sys-admin-highlight);
+}
+
+/* Responsive Profile Actions */
+@media (max-width: 768px) {
+  .profile-actions-section {
+    flex-direction: column;
+  }
+  
+  .profile-action-btn {
+    min-width: auto;
+    flex: none;
+  }
+  
+  .profile-detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .profile-detail-label {
+    min-width: auto;
+  }
+  
+  .profile-detail-value {
+    text-align: left;
+    flex: none;
+  }
+}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authAPI, studentAPI, supervisorAPI, registrationAPI, assignmentAPI, vivaTeamAPI } from '../utils/api';
-import '../styles/dashboard.css';
-import '../styles/academic-admin-dashboard.css';
+import '../styles/shared-dashboard.css';
+import logo from '../image/logo.png';
 
 // Utility function to extract error messages safely
 const extractErrorMessage = (error, defaultMessage) => {
@@ -31,6 +31,7 @@ const AcademicAdminDashboard = () => {
   const { user, logout } = useAuth();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   
   // Student management state
   const [students, setStudents] = useState([]);
@@ -533,107 +534,235 @@ const AcademicAdminDashboard = () => {
   };
 
   const renderDashboard = () => (
-    <div className="academic-admin-dashboard-content">
-      <h1>Academic Administration Dashboard</h1>
-      <p>Welcome back, {user?.first_name} {user?.last_name}! Manage academic operations efficiently.</p>
-      
-      <div className="academic-admin-stats-grid">
-        <div className="academic-admin-stat-card">
-          <h3>Total Students</h3>
-          <div className="academic-admin-stat-number">{stats.totalStudents}</div>
-          <div className="academic-admin-stat-trend">International: {stats.internationalStudents} | Domestic: {stats.domesticStudents}</div>
-        </div>
-        <div className="academic-admin-stat-card">
-          <h3>Total Supervisors</h3>
-          <div className="academic-admin-stat-number">{stats.totalSupervisors}</div>
-          <div className="academic-admin-stat-trend">Active: {stats.activeSupervisors}</div>
-        </div>
-        <div className="academic-admin-stat-card">
-          <h3>Total Registrations</h3>
-          <div className="academic-admin-stat-number">{stats.totalRegistrations}</div>
-          <div className="academic-admin-stat-trend">Pending: {stats.pendingRegistrations} | Approved: {stats.approvedRegistrations}</div>
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Academic Administration Dashboard</h1>
+        <p className="page-subtitle">Welcome back, {user?.first_name} {user?.last_name}! Manage academic operations efficiently.</p>
+        <div className="header-actions">
+          <button 
+            className="btn primary"
+            onClick={() => fetchDashboardData()}
+          >
+            🔄 Refresh Data
+          </button>
         </div>
       </div>
       
-      <div className="dashboard-actions" style={{marginTop: '24px'}}>
-        <button className="academic-admin-btn academic-admin-btn-primary" onClick={() => fetchDashboardData()}>
-          Refresh Data
-        </button>
+      {/* Stats Grid */}
+      <div className="stats-grid">
+        <div className="stats-card">
+          <div className="stats-value">{stats.totalStudents}</div>
+          <div className="stats-label">Total Students</div>
+          <div className="stats-icon">🎓</div>
+          <div className="stats-breakdown">
+            International: {stats.internationalStudents} | Domestic: {stats.domesticStudents}
+          </div>
+        </div>
+        <div className="stats-card">
+          <div className="stats-value">{stats.totalSupervisors}</div>
+          <div className="stats-label">Total Supervisors</div>
+          <div className="stats-icon">👨‍🏫</div>
+          <div className="stats-breakdown">
+            Active: {stats.activeSupervisors}
+          </div>
+        </div>
+        <div className="stats-card">
+          <div className="stats-value">{stats.totalRegistrations}</div>
+          <div className="stats-label">Total Registrations</div>
+          <div className="stats-icon">📋</div>
+          <div className="stats-breakdown">
+            Pending: {stats.pendingRegistrations} | Approved: {stats.approvedRegistrations}
+          </div>
+        </div>
+        <div className="stats-card">
+          <div className="stats-value">{stats.assignedStudents || 0}</div>
+          <div className="stats-label">Assigned Students</div>
+          <div className="stats-icon">🔗</div>
+          <div className="stats-breakdown">
+            Student-Supervisor pairs
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="content-grid">
+        <div className="info-panel">
+          <div className="panel-header">
+            <h3 className="panel-title">🚀 Quick Actions</h3>
+          </div>
+          <div className="professional-list">
+            <div className="list-item">
+              <span className="list-icon">🎓</span>
+              <span className="list-text">Manage Students</span>
+              <button 
+                className="btn secondary btn-sm"
+                onClick={() => setActiveSection('students')}
+              >
+                Go →
+              </button>
+            </div>
+            <div className="list-item">
+              <span className="list-icon">👨‍🏫</span>
+              <span className="list-text">Manage Supervisors</span>
+              <button 
+                className="btn secondary btn-sm"
+                onClick={() => setActiveSection('supervisors')}
+              >
+                Go →
+              </button>
+            </div>
+            <div className="list-item">
+              <span className="list-icon">📋</span>
+              <span className="list-text">View Registrations</span>
+              <button 
+                className="btn secondary btn-sm"
+                onClick={() => setActiveSection('registrations')}
+              >
+                Go →
+              </button>
+            </div>
+            <div className="list-item">
+              <span className="list-icon">🔗</span>
+              <span className="list-text">Manage Assignments</span>
+              <button 
+                className="btn secondary btn-sm"
+                onClick={() => setActiveSection('assignments')}
+              >
+                Go →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="info-panel">
+          <div className="panel-header">
+            <h3 className="panel-title">📊 Academic Overview</h3>
+          </div>
+          <div className="professional-list">
+            <div className="list-item">
+              <span className="list-icon">📈</span>
+              <span className="list-text">Student Enrollment</span>
+              <span className="list-value">{stats.totalStudents || 0}</span>
+            </div>
+            <div className="list-item">
+              <span className="list-icon">⏳</span>
+              <span className="list-text">Pending Reviews</span>
+              <span className="list-value">{stats.pendingRegistrations || 0}</span>
+            </div>
+            <div className="list-item">
+              <span className="list-icon">✅</span>
+              <span className="list-text">Approved This Month</span>
+              <span className="status-badge active">{stats.approvedRegistrations || 0}</span>
+            </div>
+            <div className="list-item">
+              <span className="list-icon">🎯</span>
+              <span className="list-text">Academic Status</span>
+              <span className="status-badge active">Operational</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 
   const renderStudents = () => (
-    <div className="academic-admin-management-content">
-      <div className="academic-admin-management-header">
-        <h1>Student Management</h1>
-        <div className="academic-admin-management-controls">
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Student Management</h1>
+        <p className="page-subtitle">Manage academic student records and programme assignments</p>
+        <div className="header-actions">
           <button 
-            className="academic-admin-btn academic-admin-btn-primary"
+            className="btn primary"
             onClick={() => setShowCreateStudentModal(true)}
           >
-            Add New Student
+            ➕ Add New Student
           </button>
         </div>
       </div>
 
-      <div className="search-controls" style={{padding: '16px 24px', borderBottom: '1px solid #e1f5fe'}}>
-        <div className="academic-admin-search-bar">
+      {/* Search and Filter Section */}
+      <div className="search-filter-section">
+        <div className="form-group">
+          <label className="form-label">Search Students</label>
           <input
             type="text"
             placeholder="Search students..."
             value={studentSearch}
             onChange={(e) => setStudentSearch(e.target.value)}
-            className="academic-admin-search-input"
+            className="form-input"
           />
         </div>
-        <select
-          value={programmeFilter}
-          onChange={(e) => setProgrammeFilter(e.target.value)}
-          className="academic-admin-filter-select"
-        >
-          <option value="">All Programmes</option>
-          {[...new Set(students.map(s => s.programme_of_study).filter(Boolean))].map(programme => (
-            <option key={programme} value={programme}>{programme}</option>
-          ))}
-        </select>
-        <div className="academic-admin-search-bar">
+        <div className="form-group">
+          <label className="form-label">Programme Filter</label>
+          <select
+            value={programmeFilter}
+            onChange={(e) => setProgrammeFilter(e.target.value)}
+            className="form-select"
+          >
+            <option value="">All Programmes</option>
+            {[...new Set(students.map(s => s.programme_of_study).filter(Boolean))].map(programme => (
+              <option key={programme} value={programme}>{programme}</option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Student Number</label>
           <input
             type="text"
             placeholder="Search by Student Number"
             value={studentNumberSearch}
             onChange={(e) => setStudentNumberSearch(e.target.value)}
-            className="academic-admin-search-input"
+            className="form-input"
           />
+        </div>
+        <div className="form-group">
           <button 
-            className="academic-admin-btn academic-admin-btn-secondary"
             onClick={searchStudentById}
             disabled={searchingStudentById}
+            className="btn secondary"
           >
-            {searchingStudentById ? 'Searching...' : 'Find by Number'}
+            {searchingStudentById ? 'Searching...' : '🔍 Search'}
+          </button>
+        </div>
+        <div className="form-group">
+          <button 
+            onClick={fetchStudents}
+            disabled={studentsLoading}
+            className="btn secondary"
+          >
+            🔄 Refresh All
           </button>
         </div>
       </div>
 
       {studentsError && (
-        <div className="error-message">
-          {studentsError}
+        <div className="alert alert-error">
+          <div className="alert-icon">⚠️</div>
+          <div className="alert-content">{studentsError}</div>
         </div>
       )}
 
-      {studentsLoading ? (
-        <div className="loading">Loading students...</div>
-      ) : (
-        <div className="data-table">
-          <table>
+      {/* Students Table */}
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Student Records</h2>
+          <span className="card-subtitle">{students.length} students found</span>
+        </div>
+        {studentsLoading ? (
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Loading students...</div>
+          </div>
+        ) : (
+          <table className="dashboard-table">
             <thead>
               <tr>
                 <th>Student Number</th>
-                <th>Name</th>
-                <th>Course Code</th>
+                <th>Student Details</th>
                 <th>Programme</th>
-                <th>Type</th>
-                <th>Cohort</th>
+                <th>Type & Cohort</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -653,75 +782,104 @@ const AcademicAdminDashboard = () => {
                 })
                 .map((student) => (
                 <tr key={student.student_number}>
-                  <td>{student.student_number}</td>
-                  <td>{student.forename} {student.surname}</td>
-                  <td>{student.course_code}</td>
-                  <td>{student.programme_of_study}</td>
-                  <td>{student.mode}</td>
-                  <td>{student.cohort}</td>
+                  <td><strong>#{student.student_number}</strong></td>
                   <td>
-                    <button
-                      className="btn-secondary"
-                      onClick={() => {
-                        setSelectedStudent(student);
-                        setShowStudentDetailModal(true);
-                      }}
-                    >
-                      View
-                    </button>
-                    <button
-                      className="btn-secondary"
-                      onClick={() => {
-                        setSelectedStudent(student);
-                        setShowStudentModal(true);
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn-secondary delete"
-                      onClick={() => handleDeleteStudent(student.student_number)}
-                    >
-                      Delete
-                    </button>
+                    <div className="student-details">
+                      <div className="student-name">{student.forename} {student.surname}</div>
+                      <div className="student-course">Course: {student.course_code}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="programme-name">{student.programme_of_study}</div>
+                  </td>
+                  <td>
+                    <div className="type-cohort">
+                      <span className="status-badge mode">{student.mode}</span>
+                      <span className="cohort-info">Cohort: {student.cohort}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="action-buttons">
+                      <button
+                        className="btn secondary btn-sm"
+                        onClick={() => {
+                          setSelectedStudent(student);
+                          setShowStudentDetailModal(true);
+                        }}
+                        title="View Details"
+                      >
+                        View
+                      </button>
+                      <button
+                        className="btn primary btn-sm"
+                        onClick={() => {
+                          setSelectedStudent(student);
+                          setShowStudentModal(true);
+                        }}
+                        title="Edit Student"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="btn danger btn-sm"
+                        onClick={() => handleDeleteStudent(student.student_number)}
+                        title="Delete Student"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        )}
 
-          {students.length === 0 && !studentsLoading && (
-            <div className="no-data">
-              No students found. <button className="btn-link" onClick={() => setShowCreateStudentModal(true)}>Add the first student</button>
+        {students.length === 0 && !studentsLoading && (
+          <div className="empty-state">
+            <div className="empty-state-icon">🎓</div>
+            <div className="empty-state-title">No Students Found</div>
+            <div className="empty-state-description">
+              No students found. <button className="btn primary btn-sm" onClick={() => setShowCreateStudentModal(true)}>Add the first student</button>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 
   const renderSupervisors = () => (
-    <div className="management-content">
-      <div className="management-header">
-        <h1>Supervisor Management</h1>
-        <div className="permission-notice">
-          <small>Note: You can view supervisors but cannot create, edit, or delete them. Contact system admin for supervisor management.</small>
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Supervisor Management</h1>
+        <p className="page-subtitle">View and manage academic supervisor records</p>
+        <div className="alert alert-info">
+          <div className="alert-icon">ℹ️</div>
+          <div className="alert-content">
+            Note: You can view supervisors but cannot create, edit, or delete them. Contact system admin for supervisor management.
+          </div>
         </div>
       </div>
 
-      <div className="search-controls">
-        <div className="search-group">
+      {/* Search and Filter Section */}
+      <div className="search-filter-section">
+        <div className="form-group">
+          <label className="form-label">Search Supervisors</label>
           <input
             type="text"
             placeholder="Search supervisors..."
             value={supervisorSearch}
             onChange={(e) => setSupervisorSearch(e.target.value)}
+            className="form-input"
           />
         </div>
-        <div className="search-group">
+        <div className="form-group">
+          <label className="form-label">Department Filter</label>
           <select
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
+            className="form-select"
           >
             <option value="">All Departments</option>
             {[...new Set(supervisors.map(s => s.department).filter(Boolean))].map(dept => (
@@ -729,39 +887,51 @@ const AcademicAdminDashboard = () => {
             ))}
           </select>
         </div>
-        <div className="search-group">
+        <div className="form-group">
+          <label className="form-label">Supervisor ID</label>
           <input
             type="text"
             placeholder="Search by Supervisor ID..."
             value={supervisorIdSearch}
             onChange={(e) => setSupervisorIdSearch(e.target.value)}
+            className="form-input"
           />
+        </div>
+        <div className="form-group">
           <button 
-            className="btn-secondary"
+            className="btn secondary"
             onClick={searchSupervisorById}
             disabled={searchingSupervisorById}
           >
-            {searchingSupervisorById ? 'Searching...' : 'Find by ID'}
+            {searchingSupervisorById ? 'Searching...' : '🔍 Search'}
           </button>
         </div>
       </div>
 
       {supervisorsError && (
-        <div className="error-message">
-          {supervisorsError}
+        <div className="alert alert-error">
+          <div className="alert-icon">⚠️</div>
+          <div className="alert-content">{supervisorsError}</div>
         </div>
       )}
 
-      {supervisorsLoading ? (
-        <div className="loading">Loading supervisors...</div>
-      ) : (
-        <div className="data-table">
-          <table>
+      {/* Supervisors Table */}
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Supervisor Records</h2>
+          <span className="card-subtitle">{supervisors.length} supervisors found</span>
+        </div>
+        {supervisorsLoading ? (
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Loading supervisors...</div>
+          </div>
+        ) : (
+          <table className="dashboard-table">
             <thead>
               <tr>
                 <th>Supervisor ID</th>
-                <th>Name</th>
-                <th>Email</th>
+                <th>Name & Email</th>
                 <th>Department</th>
                 <th>Created Date</th>
                 <th>Actions</th>
@@ -778,92 +948,129 @@ const AcademicAdminDashboard = () => {
                 })
                 .map((supervisor) => (
                 <tr key={supervisor.supervisor_id}>
-                  <td>{supervisor.supervisor_id}</td>
-                  <td>{supervisor.supervisor_name}</td>
-                  <td>{supervisor.email}</td>
-                  <td>{supervisor.department}</td>
-                  <td>{new Date(supervisor.created_date).toLocaleDateString()}</td>
+                  <td><strong>#{supervisor.supervisor_id}</strong></td>
                   <td>
-                    <button
-                      className="btn-secondary"
-                      onClick={() => {
-                        setSelectedSupervisor(supervisor);
-                        setShowSupervisorDetailModal(true);
-                      }}
-                    >
-                      View Details
-                    </button>
+                    <div className="supervisor-details">
+                      <div className="supervisor-name">{supervisor.supervisor_name}</div>
+                      <div className="supervisor-email">{supervisor.email}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="department-name">{supervisor.department}</div>
+                  </td>
+                  <td>
+                    <div className="date-info">{new Date(supervisor.created_date).toLocaleDateString()}</div>
+                  </td>
+                  <td>
+                    <div className="action-buttons">
+                      <button
+                        className="btn secondary btn-sm"
+                        onClick={() => {
+                          setSelectedSupervisor(supervisor);
+                          setShowSupervisorDetailModal(true);
+                        }}
+                        title="View Details"
+                      >
+                        View
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        )}
 
-          {supervisors.length === 0 && !supervisorsLoading && (
-            <div className="no-data">
-              No supervisors found.
+        {supervisors.length === 0 && !supervisorsLoading && (
+          <div className="empty-state">
+            <div className="empty-state-icon">👨‍🏫</div>
+            <div className="empty-state-title">No Supervisors Found</div>
+            <div className="empty-state-description">
+              No supervisors found matching your criteria.
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 
   const renderAssignments = () => (
-    <div className="management-content">
-      <div className="management-header">
-        <h1>Student-Supervisor Assignments</h1>
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Student-Supervisor Assignments</h1>
+        <p className="page-subtitle">Manage academic assignments between students and supervisors</p>
         <div className="header-actions">
           <button 
-            className="btn btn-primary"
+            className="btn primary"
             onClick={() => {
               setSelectedAssignment(null);
               setShowAssignmentModal(true);
             }}
           >
-            Create New Assignment
+            ➕ Create New Assignment
           </button>
         </div>
       </div>
 
-      <div className="search-filters">
-        <div className="search-group">
+      {/* Search and Filter Section */}
+      <div className="search-filter-section">
+        <div className="form-group">
+          <label className="form-label">Assignment ID</label>
           <input
             type="text"
             placeholder="Search by Assignment ID"
             value={assignmentIdSearch}
             onChange={(e) => setAssignmentIdSearch(e.target.value)}
-            className="search-input"
+            className="form-input"
           />
+        </div>
+        <div className="form-group">
           <button 
             onClick={searchAssignmentById}
-            className="btn btn-secondary"
+            className="btn secondary"
             disabled={searchingAssignmentById}
           >
-            {searchingAssignmentById ? 'Searching...' : 'Search'}
+            {searchingAssignmentById ? 'Searching...' : '🔍 Search'}
+          </button>
+        </div>
+        <div className="form-group">
+          <button 
+            onClick={fetchAssignments}
+            disabled={assignmentsLoading}
+            className="btn secondary"
+          >
+            🔄 Refresh All
           </button>
         </div>
       </div>
 
       {assignmentsError && (
-        <div className="error-message">
-          {assignmentsError}
+        <div className="alert alert-error">
+          <div className="alert-icon">⚠️</div>
+          <div className="alert-content">{assignmentsError}</div>
         </div>
       )}
 
-      {assignmentsLoading ? (
-        <div className="loading">Loading assignments...</div>
-      ) : (
-        <div className="data-table">
-          <table>
+      {/* Assignments Table */}
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Assignment Records</h2>
+          <span className="card-subtitle">{Array.isArray(assignments) ? assignments.length : 0} assignments found</span>
+        </div>
+        {assignmentsLoading ? (
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Loading assignments...</div>
+          </div>
+        ) : (
+          <table className="dashboard-table">
             <thead>
               <tr>
                 <th>Assignment ID</th>
                 <th>Student Number</th>
                 <th>Supervisor ID</th>
-                <th>Role</th>
-                <th>Start Date</th>
-                <th>End Date</th>
+                <th>Role & Duration</th>
                 <th>Notes</th>
                 <th>Actions</th>
               </tr>
@@ -871,13 +1078,29 @@ const AcademicAdminDashboard = () => {
             <tbody>
               {Array.isArray(assignments) && assignments.map(assignment => (
                 <tr key={assignment.student_supervisor_id}>
-                  <td>{assignment.student_supervisor_id}</td>
-                  <td>{assignment.student_number}</td>
-                  <td>{assignment.supervisor_id}</td>
-                  <td>{assignment.role}</td>
-                  <td>{new Date(assignment.start_date).toLocaleDateString()}</td>
-                  <td>{assignment.end_date ? new Date(assignment.end_date).toLocaleDateString() : 'Ongoing'}</td>
-                  <td>{assignment.supervision_notes}</td>
+                  <td><strong>#{assignment.student_supervisor_id}</strong></td>
+                  <td>
+                    <div className="student-info">
+                      <div className="student-number">{assignment.student_number}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="supervisor-info">
+                      <div className="supervisor-id">{assignment.supervisor_id}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="role-duration">
+                      <span className="status-badge role">{assignment.role}</span>
+                      <div className="duration-info">
+                        {new Date(assignment.start_date).toLocaleDateString()} - 
+                        {assignment.end_date ? new Date(assignment.end_date).toLocaleDateString() : 'Ongoing'}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="notes-info">{assignment.supervision_notes || 'No notes'}</div>
+                  </td>
                   <td>
                     <div className="action-buttons">
                       <button 
@@ -885,7 +1108,8 @@ const AcademicAdminDashboard = () => {
                           setSelectedAssignment(assignment);
                           setShowAssignmentDetailModal(true);
                         }}
-                        className="btn btn-sm btn-info"
+                        className="btn secondary btn-sm"
+                        title="View Details"
                       >
                         View
                       </button>
@@ -894,7 +1118,8 @@ const AcademicAdminDashboard = () => {
                           setSelectedAssignment(assignment);
                           setShowAssignmentModal(true);
                         }}
-                        className="btn btn-sm btn-warning"
+                        className="btn primary btn-sm"
+                        title="Edit Assignment"
                       >
                         Edit
                       </button>
@@ -909,7 +1134,8 @@ const AcademicAdminDashboard = () => {
                             }
                           }
                         }}
-                        className="btn btn-sm btn-danger"
+                        className="btn danger btn-sm"
+                        title="Remove Assignment"
                       >
                         Remove
                       </button>
@@ -919,56 +1145,61 @@ const AcademicAdminDashboard = () => {
               ))}
             </tbody>
           </table>
-          
-          {Array.isArray(assignments) && assignments.length === 0 && (
-            <div className="no-data">
-              No assignments found. <button onClick={() => {
+        )}
+        
+        {Array.isArray(assignments) && assignments.length === 0 && !assignmentsLoading && (
+          <div className="empty-state">
+            <div className="empty-state-icon">📋</div>
+            <div className="empty-state-title">No Assignments Found</div>
+            <div className="empty-state-description">
+              No assignments found. <button className="btn primary btn-sm" onClick={() => {
                 setSelectedAssignment(null);
                 setShowAssignmentModal(true);
               }}>Create the first assignment</button>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 
   const renderRegistrations = () => (
-    <div className="management-content">
-      <div className="management-header">
-        <h1>Registration Management</h1>
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Registration Management</h1>
+        <p className="page-subtitle">Manage student registration records and extension requests</p>
         <div className="header-actions">
           <button 
-            className="btn btn-primary"
+            className="btn primary"
             onClick={() => {
               setSelectedRegistration(null);
               setShowRegistrationModal(true);
             }}
           >
-            Create New Registration
+            ➕ Create New Registration
           </button>
         </div>
       </div>
 
-      <div className="search-filters">
-        <div className="search-group">
+      {/* Search and Filter Section */}
+      <div className="search-filter-section">
+        <div className="form-group">
+          <label className="form-label">Search Students</label>
           <input
             type="text"
             placeholder="Search by student number..."
             value={registrationSearch}
             onChange={(e) => setRegistrationSearch(e.target.value)}
-            className="search-input"
+            className="form-input"
           />
-          <button onClick={fetchRegistrations} className="btn btn-secondary">
-            Search
-          </button>
         </div>
-        
-        <div className="search-group">
+        <div className="form-group">
+          <label className="form-label">Status Filter</label>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="filter-select"
+            className="form-select"
           >
             <option value="">All Statuses</option>
             <option value="pending">Pending</option>
@@ -979,15 +1210,17 @@ const AcademicAdminDashboard = () => {
             <option value="completed">Completed</option>
           </select>
         </div>
-
-        <div className="search-group">
+        <div className="form-group">
+          <label className="form-label">Registration ID</label>
           <input
             type="text"
             placeholder="Search by Registration ID..."
             value={registrationIdSearch}
             onChange={(e) => setRegistrationIdSearch(e.target.value)}
-            className="search-input"
+            className="form-input"
           />
+        </div>
+        <div className="form-group">
           <button 
             onClick={async () => {
               if (!registrationIdSearch.trim()) {
@@ -1008,44 +1241,64 @@ const AcademicAdminDashboard = () => {
               }
             }}
             disabled={searchingRegistrationById}
-            className="btn btn-secondary"
+            className="btn secondary"
           >
-            {searchingRegistrationById ? 'Searching...' : 'Find by ID'}
+            {searchingRegistrationById ? 'Searching...' : '🔍 Search'}
+          </button>
+        </div>
+        <div className="form-group">
+          <button 
+            onClick={fetchRegistrations} 
+            disabled={registrationsLoading}
+            className="btn secondary"
+          >
+            🔄 Refresh All
           </button>
         </div>
       </div>
 
       {registrationsError && (
-        <div className="error-message">
-          {registrationsError}
+        <div className="alert alert-error">
+          <div className="alert-icon">⚠️</div>
+          <div className="alert-content">{registrationsError}</div>
         </div>
       )}
 
-      {registrationsLoading ? (
-        <div className="loading">Loading registrations...</div>
-      ) : (
-        <div className="data-table">
-          <table>
+      {/* Registrations Table */}
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Registration Records</h2>
+          <span className="card-subtitle">{Array.isArray(registrations) ? registrations.length : 0} registrations found</span>
+        </div>
+        {registrationsLoading ? (
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Loading registrations...</div>
+          </div>
+        ) : (
+          <table className="dashboard-table">
             <thead>
               <tr>
                 <th>Registration ID</th>
                 <th>Student Number</th>
                 <th>Status</th>
-                <th>Original Deadline</th>
-                <th>Revised Deadline</th>
-                <th>Extension Days</th>
-                <th>Process Completed</th>
-                <th>Created Date</th>
+                <th>Deadlines</th>
+                <th>Extension Info</th>
+                <th>Process Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {Array.isArray(registrations) && registrations.map(registration => (
                 <tr key={registration.registration_id}>
-                  <td>{registration.registration_id}</td>
-                  <td>{registration.student_number}</td>
+                  <td><strong>#{registration.registration_id}</strong></td>
                   <td>
-                    <span className={`status ${registration.registration_status}`}>
+                    <div className="student-info">
+                      <div className="student-number">{registration.student_number}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`status-badge ${registration.registration_status}`}>
                       {registration.registration_status === 'extension_requested' ? 
                         '⏳ Extension Requested' : 
                         registration.registration_status === 'extension_approved' ?
@@ -1054,15 +1307,27 @@ const AcademicAdminDashboard = () => {
                       }
                     </span>
                   </td>
-                  <td>{new Date(registration.original_registration_deadline).toLocaleDateString()}</td>
-                  <td>{registration.revised_registration_deadline ? new Date(registration.revised_registration_deadline).toLocaleDateString() : '-'}</td>
-                  <td>{registration.registration_extension_length_days || 0}</td>
                   <td>
-                    <span className={`status ${registration.pgr_registration_process_completed ? 'completed' : 'pending'}`}>
-                      {registration.pgr_registration_process_completed ? 'Yes' : 'No'}
+                    <div className="deadline-info">
+                      <div className="original-deadline">Original: {new Date(registration.original_registration_deadline).toLocaleDateString()}</div>
+                      <div className="revised-deadline">
+                        {registration.revised_registration_deadline ? 
+                          `Revised: ${new Date(registration.revised_registration_deadline).toLocaleDateString()}` : 
+                          'No revision'
+                        }
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="extension-info">
+                      <span className="extension-days">{registration.registration_extension_length_days || 0} days</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`status-badge ${registration.pgr_registration_process_completed ? 'completed' : 'pending'}`}>
+                      {registration.pgr_registration_process_completed ? '✅ Complete' : '⏳ Pending'}
                     </span>
                   </td>
-                  <td>{new Date(registration.created_date).toLocaleDateString()}</td>
                   <td>
                     <div className="action-buttons">
                       <button 
@@ -1070,7 +1335,8 @@ const AcademicAdminDashboard = () => {
                           setSelectedRegistration(registration);
                           setShowRegistrationDetailModal(true);
                         }}
-                        className="btn btn-sm btn-info"
+                        className="btn secondary btn-sm"
+                        title="View Details"
                       >
                         View
                       </button>
@@ -1079,7 +1345,8 @@ const AcademicAdminDashboard = () => {
                           setSelectedRegistration(registration);
                           setShowRegistrationModal(true);
                         }}
-                        className="btn btn-sm btn-warning"
+                        className="btn primary btn-sm"
+                        title="Edit Registration"
                       >
                         Edit
                       </button>
@@ -1088,17 +1355,18 @@ const AcademicAdminDashboard = () => {
                           setSelectedRegistration(registration);
                           setShowExtensionModal(true);
                         }}
-                        className="btn btn-sm btn-secondary"
+                        className="btn warning btn-sm"
+                        title="Manage Extension"
                       >
                         Extension
                       </button>
                       {registration.registration_status === 'extension_requested' && (
                         <button 
                           onClick={() => handleApproveExtension(registration.registration_id)}
-                          className="btn btn-sm btn-success"
+                          className="btn success btn-sm"
                           title="Approve the extension request"
                         >
-                          ✓ Approve Extension
+                          Approve
                         </button>
                       )}
                     </div>
@@ -1107,48 +1375,56 @@ const AcademicAdminDashboard = () => {
               ))}
             </tbody>
           </table>
-          
-          {Array.isArray(registrations) && registrations.length === 0 && (
-            <div className="no-data">
-              No registrations found. <button onClick={() => {
+        )}
+        
+        {Array.isArray(registrations) && registrations.length === 0 && !registrationsLoading && (
+          <div className="empty-state">
+            <div className="empty-state-icon">📝</div>
+            <div className="empty-state-title">No Registrations Found</div>
+            <div className="empty-state-description">
+              No registrations found. <button className="btn primary btn-sm" onClick={() => {
                 setSelectedRegistration(null);
                 setShowRegistrationModal(true);
               }}>Create the first registration</button>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 
   const renderVivaTeams = () => (
-    <div className="management-content">
-      <div className="management-header">
-        <h1>Viva Team Management</h1>
-        <div className="header-actions">
-          <span className="info-text">Read-only access - View and track viva teams</span>
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Viva Team Management</h1>
+        <p className="page-subtitle">View and track viva teams across different examination stages</p>
+        <div className="alert alert-info">
+          <div className="alert-icon">ℹ️</div>
+          <div className="alert-content">
+            Read-only access - View and track viva teams
+          </div>
         </div>
       </div>
 
-      <div className="search-filters">
-        <div className="search-group">
+      {/* Search and Filter Section */}
+      <div className="search-filter-section">
+        <div className="form-group">
+          <label className="form-label">Search Students</label>
           <input
             type="text"
             placeholder="Search by student number..."
             value={vivaTeamSearch}
             onChange={(e) => setVivaTeamSearch(e.target.value)}
-            className="search-input"
+            className="form-input"
           />
-          <button onClick={fetchVivaTeams} className="btn btn-secondary">
-            Search
-          </button>
         </div>
-        
-        <div className="search-group">
+        <div className="form-group">
+          <label className="form-label">Stage Filter</label>
           <select
             value={stageFilter}
             onChange={(e) => setStageFilter(e.target.value)}
-            className="filter-select"
+            className="form-select"
           >
             <option value="">All Stages</option>
             <option value="registration">Registration</option>
@@ -1156,12 +1432,12 @@ const AcademicAdminDashboard = () => {
             <option value="final">Final</option>
           </select>
         </div>
-        
-        <div className="search-group">
+        <div className="form-group">
+          <label className="form-label">Status Filter</label>
           <select
             value={vivaTeamStatusFilter}
             onChange={(e) => setVivaTeamStatusFilter(e.target.value)}
-            className="filter-select"
+            className="form-select"
           >
             <option value="">All Statuses</option>
             <option value="proposed">Proposed</option>
@@ -1171,79 +1447,114 @@ const AcademicAdminDashboard = () => {
             <option value="completed">Completed</option>
           </select>
         </div>
-
-        <div className="search-group">
+        <div className="form-group">
+          <label className="form-label">Viva Team ID</label>
           <input
             type="text"
             placeholder="Search by Viva Team ID..."
             value={vivaTeamIdSearch}
             onChange={(e) => setVivaTeamIdSearch(e.target.value)}
-            className="search-input"
+            className="form-input"
           />
+        </div>
+        <div className="form-group">
           <button 
             onClick={searchVivaTeamById}
-            className="btn btn-secondary"
+            className="btn secondary"
             disabled={searchingVivaTeamById}
           >
-            {searchingVivaTeamById ? 'Searching...' : 'Find by ID'}
+            {searchingVivaTeamById ? 'Searching...' : '🔍 Search'}
+          </button>
+        </div>
+        <div className="form-group">
+          <button 
+            onClick={fetchVivaTeams} 
+            disabled={vivaTeamsLoading}
+            className="btn secondary"
+          >
+            🔄 Refresh All
           </button>
         </div>
       </div>
 
       {vivaTeamsError && (
-        <div className="error-message">
-          {vivaTeamsError}
+        <div className="alert alert-error">
+          <div className="alert-icon">⚠️</div>
+          <div className="alert-content">{vivaTeamsError}</div>
         </div>
       )}
 
-      {vivaTeamsLoading ? (
-        <div className="loading">Loading viva teams...</div>
-      ) : (
-        <div className="data-table">
-          <table>
+      {/* Viva Teams Table */}
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Viva Team Records</h2>
+          <span className="card-subtitle">{Array.isArray(vivaTeams) ? vivaTeams.length : 0} viva teams found</span>
+        </div>
+        {vivaTeamsLoading ? (
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Loading viva teams...</div>
+          </div>
+        ) : (
+          <table className="dashboard-table">
             <thead>
               <tr>
                 <th>Team ID</th>
                 <th>Student Number</th>
-                <th>Stage</th>
-                <th>Status</th>
-                <th>Internal Examiner 1</th>
-                <th>Internal Examiner 2</th>
-                <th>External Examiner</th>
-                <th>Proposed Date</th>
-                <th>Scheduled Date</th>
-                <th>Location</th>
-                <th>Outcome</th>
+                <th>Stage & Status</th>
+                <th>Examiners</th>
+                <th>Schedule</th>
+                <th>Location & Outcome</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {Array.isArray(vivaTeams) && vivaTeams.map(vivaTeam => (
                 <tr key={vivaTeam.id}>
-                  <td>{vivaTeam.id}</td>
-                  <td>{vivaTeam.student_number}</td>
+                  <td><strong>#{vivaTeam.id}</strong></td>
                   <td>
-                    <span className={`status stage-${vivaTeam.stage}`}>
-                      {vivaTeam.stage.charAt(0).toUpperCase() + vivaTeam.stage.slice(1)}
-                    </span>
+                    <div className="student-info">
+                      <div className="student-number">{vivaTeam.student_number}</div>
+                    </div>
                   </td>
                   <td>
-                    <span className={`status ${vivaTeam.status}`}>
-                      {vivaTeam.status === 'proposed' ? '📋 Proposed' :
-                       vivaTeam.status === 'approved' ? '✅ Approved' :
-                       vivaTeam.status === 'rejected' ? '❌ Rejected' :
-                       vivaTeam.status === 'scheduled' ? '📅 Scheduled' :
-                       vivaTeam.status === 'completed' ? '🎓 Completed' :
-                       vivaTeam.status}
-                    </span>
+                    <div className="stage-status">
+                      <span className={`status-badge stage-${vivaTeam.stage}`}>
+                        {vivaTeam.stage.charAt(0).toUpperCase() + vivaTeam.stage.slice(1)}
+                      </span>
+                      <span className={`status-badge ${vivaTeam.status}`}>
+                        {vivaTeam.status === 'proposed' ? '📋 Proposed' :
+                         vivaTeam.status === 'approved' ? '✅ Approved' :
+                         vivaTeam.status === 'rejected' ? '❌ Rejected' :
+                         vivaTeam.status === 'scheduled' ? '📅 Scheduled' :
+                         vivaTeam.status === 'completed' ? '🎓 Completed' :
+                         vivaTeam.status}
+                      </span>
+                    </div>
                   </td>
-                  <td>{vivaTeam.internal_examiner_1_id || 'N/A'}</td>
-                  <td>{vivaTeam.internal_examiner_2_id || 'N/A'}</td>
-                  <td>{vivaTeam.external_examiner_name || 'N/A'}</td>
-                  <td>{vivaTeam.proposed_date ? new Date(vivaTeam.proposed_date).toLocaleDateString() : 'N/A'}</td>
-                  <td>{vivaTeam.scheduled_date ? new Date(vivaTeam.scheduled_date).toLocaleDateString() : 'N/A'}</td>
-                  <td>{vivaTeam.location || 'N/A'}</td>
-                  <td>{vivaTeam.outcome || 'Pending'}</td>
+                  <td>
+                    <div className="examiners-info">
+                      <div className="examiner">Int. 1: {vivaTeam.internal_examiner_1_id || 'N/A'}</div>
+                      <div className="examiner">Int. 2: {vivaTeam.internal_examiner_2_id || 'N/A'}</div>
+                      <div className="examiner">Ext.: {vivaTeam.external_examiner_name || 'N/A'}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="schedule-info">
+                      <div className="proposed-date">
+                        Proposed: {vivaTeam.proposed_date ? new Date(vivaTeam.proposed_date).toLocaleDateString() : 'N/A'}
+                      </div>
+                      <div className="scheduled-date">
+                        Scheduled: {vivaTeam.scheduled_date ? new Date(vivaTeam.scheduled_date).toLocaleDateString() : 'N/A'}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="location-outcome">
+                      <div className="location">📍 {vivaTeam.location || 'TBD'}</div>
+                      <div className="outcome">🎯 {vivaTeam.outcome || 'Pending'}</div>
+                    </div>
+                  </td>
                   <td>
                     <div className="action-buttons">
                       <button 
@@ -1251,7 +1562,8 @@ const AcademicAdminDashboard = () => {
                           setSelectedVivaTeam(vivaTeam);
                           setShowVivaTeamDetailModal(true);
                         }}
-                        className="btn btn-sm btn-info"
+                        className="btn secondary btn-sm"
+                        title="View Details"
                       >
                         View
                       </button>
@@ -1261,97 +1573,190 @@ const AcademicAdminDashboard = () => {
               ))}
             </tbody>
           </table>
-          
-          {Array.isArray(vivaTeams) && vivaTeams.length === 0 && (
-            <div className="no-data">
-              No viva teams found.
+        )}
+        
+        {Array.isArray(vivaTeams) && vivaTeams.length === 0 && !vivaTeamsLoading && (
+          <div className="empty-state">
+            <div className="empty-state-icon">🎓</div>
+            <div className="empty-state-title">No Viva Teams Found</div>
+            <div className="empty-state-description">
+              No viva teams found matching your criteria.
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 
   const renderReports = () => (
-    <div className="management-content">
-      <div className="management-header">
-        <h1>Reports & Analytics</h1>
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Reports & Analytics</h1>
+        <p className="page-subtitle">Generate comprehensive reports and view analytics</p>
       </div>
       
-      <div className="reports-grid">
-        <div className="report-card">
-          <h3>Student Analytics</h3>
-          <p>Track student enrollment, progression, and completion rates</p>
-          <div className="report-stats">
-            <p>Total Students: {stats.totalStudents}</p>
-            <p>International: {stats.internationalStudents}</p>
-            <p>Domestic: {stats.domesticStudents}</p>
+      {/* Reports Grid */}
+      <div className="dashboard-grid">
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">Student Analytics</h3>
+            <div className="card-icon">🎓</div>
           </div>
-          <button className="btn-secondary">Generate Report</button>
+          <div className="card-content">
+            <p className="card-description">Track student enrollment, progression, and completion rates</p>
+            <div className="stats-list">
+              <div className="stat-item">
+                <span className="stat-label">Total Students:</span>
+                <span className="stat-value">{stats.totalStudents}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">International:</span>
+                <span className="stat-value">{stats.internationalStudents}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Domestic:</span>
+                <span className="stat-value">{stats.domesticStudents}</span>
+              </div>
+            </div>
+          </div>
+          <div className="card-actions">
+            <button className="btn secondary">Generate Report</button>
+          </div>
         </div>
         
-        <div className="report-card">
-          <h3>Supervisor Analytics</h3>
-          <p>Monitor supervisor workload and capacity</p>
-          <div className="report-stats">
-            <p>Total Supervisors: {stats.totalSupervisors}</p>
-            <p>Active: {stats.activeSupervisors}</p>
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">Supervisor Analytics</h3>
+            <div className="card-icon">👨‍🏫</div>
           </div>
-          <button className="btn-secondary">Generate Report</button>
+          <div className="card-content">
+            <p className="card-description">Monitor supervisor workload and capacity</p>
+            <div className="stats-list">
+              <div className="stat-item">
+                <span className="stat-label">Total Supervisors:</span>
+                <span className="stat-value">{stats.totalSupervisors}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Active:</span>
+                <span className="stat-value">{stats.activeSupervisors}</span>
+              </div>
+            </div>
+          </div>
+          <div className="card-actions">
+            <button className="btn secondary">Generate Report</button>
+          </div>
         </div>
         
-        <div className="report-card">
-          <h3>Registration Analytics</h3>
-          <p>View registration trends and processing times</p>
-          <div className="report-stats">
-            <p>Total Registrations: {stats.totalRegistrations}</p>
-            <p>Pending: {stats.pendingRegistrations}</p>
-            <p>Approved: {stats.approvedRegistrations}</p>
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">Registration Analytics</h3>
+            <div className="card-icon">📋</div>
           </div>
-          <button className="btn-secondary">Generate Report</button>
+          <div className="card-content">
+            <p className="card-description">View registration trends and processing times</p>
+            <div className="stats-list">
+              <div className="stat-item">
+                <span className="stat-label">Total Registrations:</span>
+                <span className="stat-value">{stats.totalRegistrations}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Pending:</span>
+                <span className="stat-value">{stats.pendingRegistrations}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Approved:</span>
+                <span className="stat-value">{stats.approvedRegistrations}</span>
+              </div>
+            </div>
+          </div>
+          <div className="card-actions">
+            <button className="btn secondary">Generate Report</button>
+          </div>
         </div>
         
-        <div className="report-card">
-          <h3>Programme Analytics</h3>
-          <p>Analyze programme popularity and outcomes</p>
-          <button className="btn-secondary">Generate Report</button>
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">Programme Analytics</h3>
+            <div className="card-icon">🎯</div>
+          </div>
+          <div className="card-content">
+            <p className="card-description">Analyze programme popularity and outcomes</p>
+          </div>
+          <div className="card-actions">
+            <button className="btn secondary">Generate Report</button>
+          </div>
         </div>
       </div>
     </div>
   );
 
   const renderAwards = () => (
-    <div className="management-content">
-      <div className="management-header">
-        <h1>Awards & Graduation</h1>
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Awards & Graduation</h1>
+        <p className="page-subtitle">Manage academic awards and graduation processes</p>
       </div>
       
-      <div className="awards-grid">
-        <div className="award-section">
-          <h3>Graduation Processing</h3>
-          <p>Manage student graduation procedures and ceremonies</p>
-          <div className="graduation-stats">
-            <p>Students Eligible for Graduation: {stats.completedRegistrations}</p>
+      {/* Awards Grid */}
+      <div className="dashboard-grid">
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">Graduation Processing</h3>
+            <div className="card-icon">🎓</div>
           </div>
-          <button className="btn-primary">Process Graduations</button>
+          <div className="card-content">
+            <p className="card-description">Manage student graduation procedures and ceremonies</p>
+            <div className="stats-list">
+              <div className="stat-item">
+                <span className="stat-label">Eligible Students:</span>
+                <span className="stat-value">{stats.completedRegistrations}</span>
+              </div>
+            </div>
+          </div>
+          <div className="card-actions">
+            <button className="btn primary">🎓 Process Graduations</button>
+          </div>
         </div>
         
-        <div className="award-section">
-          <h3>Academic Awards</h3>
-          <p>Track and manage academic achievement awards</p>
-          <button className="btn-primary">Manage Awards</button>
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">Academic Awards</h3>
+            <div className="card-icon">🏆</div>
+          </div>
+          <div className="card-content">
+            <p className="card-description">Track and manage academic achievement awards</p>
+          </div>
+          <div className="card-actions">
+            <button className="btn primary">🏆 Manage Awards</button>
+          </div>
         </div>
         
-        <div className="award-section">
-          <h3>Degree Classifications</h3>
-          <p>Review and approve degree classifications</p>
-          <button className="btn-primary">Review Classifications</button>
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">Degree Classifications</h3>
+            <div className="card-icon">📜</div>
+          </div>
+          <div className="card-content">
+            <p className="card-description">Review and approve degree classifications</p>
+          </div>
+          <div className="card-actions">
+            <button className="btn primary">📜 Review Classifications</button>
+          </div>
         </div>
         
-        <div className="award-section">
-          <h3>Graduation Ceremonies</h3>
-          <p>Organize and schedule graduation ceremonies</p>
-          <button className="btn-primary">Schedule Ceremonies</button>
+        <div className="dashboard-card">
+          <div className="card-header">
+            <h3 className="card-title">Graduation Ceremonies</h3>
+            <div className="card-icon">🎪</div>
+          </div>
+          <div className="card-content">
+            <p className="card-description">Organize and schedule graduation ceremonies</p>
+          </div>
+          <div className="card-actions">
+            <button className="btn primary">🎪 Schedule Ceremonies</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1396,7 +1801,7 @@ const AcademicAdminDashboard = () => {
   const renderSidebar = () => (
     <aside className={`academic-admin-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
       <div className="academic-admin-sidebar-header">
-        <h2>{sidebarCollapsed ? 'AA' : 'Academic Admin Portal'}</h2>
+        <h2>{sidebarCollapsed ? 'AA' : 'Academic Admin'}</h2>
         <button 
           className="academic-admin-sidebar-toggle"
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
