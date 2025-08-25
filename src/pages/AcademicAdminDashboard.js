@@ -31,6 +31,7 @@ const AcademicAdminDashboard = () => {
   const { user, logout } = useAuth();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   
   // Student management state
@@ -514,6 +515,20 @@ const AcademicAdminDashboard = () => {
     fetchDashboardData();
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userDropdownOpen && !event.target.closest('.user-actions')) {
+        setUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [userDropdownOpen]);
+
   useEffect(() => {
     if (activeSection === 'students') {
       fetchStudents();
@@ -554,46 +569,44 @@ const AcademicAdminDashboard = () => {
         <div className="stats-card">
           <div className="stats-value">{stats.totalStudents}</div>
           <div className="stats-label">Total Students</div>
-          <div className="stats-icon">🎓</div>
-          <div className="stats-breakdown">
-            International: {stats.internationalStudents} | Domestic: {stats.domesticStudents}
-          </div>
+          <span className={`status-badge ${stats.totalStudents > 0 ? 'active' : 'inactive'}`}>
+            {stats.totalStudents > 0 ? 'Enrolled' : 'None'}
+          </span>
         </div>
+        
         <div className="stats-card">
           <div className="stats-value">{stats.totalSupervisors}</div>
           <div className="stats-label">Total Supervisors</div>
-          <div className="stats-icon">👨‍🏫</div>
-          <div className="stats-breakdown">
-            Active: {stats.activeSupervisors}
-          </div>
+          <span className={`status-badge ${stats.totalSupervisors > 0 ? 'active' : 'inactive'}`}>
+            {stats.totalSupervisors > 0 ? 'Available' : 'None'}
+          </span>
         </div>
+        
         <div className="stats-card">
           <div className="stats-value">{stats.totalRegistrations}</div>
           <div className="stats-label">Total Registrations</div>
-          <div className="stats-icon">📋</div>
-          <div className="stats-breakdown">
-            Pending: {stats.pendingRegistrations} | Approved: {stats.approvedRegistrations}
-          </div>
+          <span className={`status-badge ${stats.totalRegistrations > 0 ? 'active' : 'inactive'}`}>
+            {stats.totalRegistrations > 0 ? 'Submitted' : 'None'}
+          </span>
         </div>
+        
         <div className="stats-card">
           <div className="stats-value">{stats.assignedStudents || 0}</div>
           <div className="stats-label">Assigned Students</div>
-          <div className="stats-icon">🔗</div>
-          <div className="stats-breakdown">
-            Student-Supervisor pairs
-          </div>
+          <span className={`status-badge ${stats.assignedStudents > 0 ? 'active' : 'inactive'}`}>
+            {stats.assignedStudents > 0 ? 'Assigned' : 'None'}
+          </span>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="content-grid">
+      <div className="content-grid two-column">
         <div className="info-panel">
           <div className="panel-header">
-            <h3 className="panel-title">🚀 Quick Actions</h3>
+            <h3 className="card-title">Quick Actions</h3>
           </div>
           <div className="professional-list">
             <div className="list-item">
-              <span className="list-icon">🎓</span>
               <span className="list-text">Manage Students</span>
               <button 
                 className="btn secondary btn-sm"
@@ -603,7 +616,6 @@ const AcademicAdminDashboard = () => {
               </button>
             </div>
             <div className="list-item">
-              <span className="list-icon">👨‍🏫</span>
               <span className="list-text">Manage Supervisors</span>
               <button 
                 className="btn secondary btn-sm"
@@ -613,7 +625,6 @@ const AcademicAdminDashboard = () => {
               </button>
             </div>
             <div className="list-item">
-              <span className="list-icon">📋</span>
               <span className="list-text">View Registrations</span>
               <button 
                 className="btn secondary btn-sm"
@@ -623,7 +634,6 @@ const AcademicAdminDashboard = () => {
               </button>
             </div>
             <div className="list-item">
-              <span className="list-icon">🔗</span>
               <span className="list-text">Manage Assignments</span>
               <button 
                 className="btn secondary btn-sm"
@@ -637,26 +647,22 @@ const AcademicAdminDashboard = () => {
 
         <div className="info-panel">
           <div className="panel-header">
-            <h3 className="panel-title">📊 Academic Overview</h3>
+            <h3 className="card-title">Academic Overview</h3>
           </div>
           <div className="professional-list">
             <div className="list-item">
-              <span className="list-icon">📈</span>
               <span className="list-text">Student Enrollment</span>
               <span className="list-value">{stats.totalStudents || 0}</span>
             </div>
             <div className="list-item">
-              <span className="list-icon">⏳</span>
               <span className="list-text">Pending Reviews</span>
               <span className="list-value">{stats.pendingRegistrations || 0}</span>
             </div>
             <div className="list-item">
-              <span className="list-icon">✅</span>
               <span className="list-text">Approved This Month</span>
               <span className="status-badge active">{stats.approvedRegistrations || 0}</span>
             </div>
             <div className="list-item">
-              <span className="list-icon">🎯</span>
               <span className="list-text">Academic Status</span>
               <span className="status-badge active">Operational</span>
             </div>
@@ -717,7 +723,7 @@ const AcademicAdminDashboard = () => {
             className="form-input"
           />
         </div>
-        <div className="form-group">
+        <div className="form-group  button-shift">
           <button 
             onClick={searchStudentById}
             disabled={searchingStudentById}
@@ -726,7 +732,7 @@ const AcademicAdminDashboard = () => {
             {searchingStudentById ? 'Searching...' : '🔍 Search'}
           </button>
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={fetchStudents}
             disabled={studentsLoading}
@@ -897,7 +903,7 @@ const AcademicAdminDashboard = () => {
             className="form-input"
           />
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             className="btn secondary"
             onClick={searchSupervisorById}
@@ -1025,7 +1031,7 @@ const AcademicAdminDashboard = () => {
             className="form-input"
           />
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={searchAssignmentById}
             className="btn secondary"
@@ -1034,7 +1040,7 @@ const AcademicAdminDashboard = () => {
             {searchingAssignmentById ? 'Searching...' : '🔍 Search'}
           </button>
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={fetchAssignments}
             disabled={assignmentsLoading}
@@ -1220,7 +1226,7 @@ const AcademicAdminDashboard = () => {
             className="form-input"
           />
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={async () => {
               if (!registrationIdSearch.trim()) {
@@ -1246,7 +1252,7 @@ const AcademicAdminDashboard = () => {
             {searchingRegistrationById ? 'Searching...' : '🔍 Search'}
           </button>
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={fetchRegistrations} 
             disabled={registrationsLoading}
@@ -1457,7 +1463,7 @@ const AcademicAdminDashboard = () => {
             className="form-input"
           />
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={searchVivaTeamById}
             className="btn secondary"
@@ -1466,7 +1472,7 @@ const AcademicAdminDashboard = () => {
             {searchingVivaTeamById ? 'Searching...' : '🔍 Search'}
           </button>
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={fetchVivaTeams} 
             disabled={vivaTeamsLoading}
@@ -1601,22 +1607,20 @@ const AcademicAdminDashboard = () => {
         <div className="dashboard-card">
           <div className="card-header">
             <h3 className="card-title">Student Analytics</h3>
-            <div className="card-icon">🎓</div>
           </div>
           <div className="card-content">
-            <p className="card-description">Track student enrollment, progression, and completion rates</p>
             <div className="stats-list">
               <div className="stat-item">
                 <span className="stat-label">Total Students:</span>
-                <span className="stat-value">{stats.totalStudents}</span>
+                <span className="list-value">{stats.totalStudents}</span>
               </div>
               <div className="stat-item">
                 <span className="stat-label">International:</span>
-                <span className="stat-value">{stats.internationalStudents}</span>
+                <span className="list-value">{stats.internationalStudents}</span>
               </div>
               <div className="stat-item">
                 <span className="stat-label">Domestic:</span>
-                <span className="stat-value">{stats.domesticStudents}</span>
+                <span className="list-value">{stats.domesticStudents}</span>
               </div>
             </div>
           </div>
@@ -1628,18 +1632,16 @@ const AcademicAdminDashboard = () => {
         <div className="dashboard-card">
           <div className="card-header">
             <h3 className="card-title">Supervisor Analytics</h3>
-            <div className="card-icon">👨‍🏫</div>
           </div>
           <div className="card-content">
-            <p className="card-description">Monitor supervisor workload and capacity</p>
             <div className="stats-list">
               <div className="stat-item">
                 <span className="stat-label">Total Supervisors:</span>
-                <span className="stat-value">{stats.totalSupervisors}</span>
+                <span className="list-value">{stats.totalSupervisors}</span>
               </div>
               <div className="stat-item">
                 <span className="stat-label">Active:</span>
-                <span className="stat-value">{stats.activeSupervisors}</span>
+                <span className="list-value">{stats.activeSupervisors}</span>
               </div>
             </div>
           </div>
@@ -1651,22 +1653,20 @@ const AcademicAdminDashboard = () => {
         <div className="dashboard-card">
           <div className="card-header">
             <h3 className="card-title">Registration Analytics</h3>
-            <div className="card-icon">📋</div>
           </div>
           <div className="card-content">
-            <p className="card-description">View registration trends and processing times</p>
             <div className="stats-list">
               <div className="stat-item">
                 <span className="stat-label">Total Registrations:</span>
-                <span className="stat-value">{stats.totalRegistrations}</span>
+                <span className="list-value">{stats.totalRegistrations}</span>
               </div>
               <div className="stat-item">
                 <span className="stat-label">Pending:</span>
-                <span className="stat-value">{stats.pendingRegistrations}</span>
+                <span className="list-value">{stats.pendingRegistrations}</span>
               </div>
               <div className="stat-item">
                 <span className="stat-label">Approved:</span>
-                <span className="stat-value">{stats.approvedRegistrations}</span>
+                <span className="list-value">{stats.approvedRegistrations}</span>
               </div>
             </div>
           </div>
@@ -1678,7 +1678,6 @@ const AcademicAdminDashboard = () => {
         <div className="dashboard-card">
           <div className="card-header">
             <h3 className="card-title">Programme Analytics</h3>
-            <div className="card-icon">🎯</div>
           </div>
           <div className="card-content">
             <p className="card-description">Analyze programme popularity and outcomes</p>
@@ -1704,58 +1703,53 @@ const AcademicAdminDashboard = () => {
         <div className="dashboard-card">
           <div className="card-header">
             <h3 className="card-title">Graduation Processing</h3>
-            <div className="card-icon">🎓</div>
           </div>
           <div className="card-content">
-            <p className="card-description">Manage student graduation procedures and ceremonies</p>
             <div className="stats-list">
               <div className="stat-item">
                 <span className="stat-label">Eligible Students:</span>
-                <span className="stat-value">{stats.completedRegistrations}</span>
+                <span className="list-value">{stats.completedRegistrations}</span>
               </div>
             </div>
           </div>
           <div className="card-actions">
-            <button className="btn primary">🎓 Process Graduations</button>
+            <button className="btn primary">Process Graduations</button>
           </div>
         </div>
         
         <div className="dashboard-card">
           <div className="card-header">
             <h3 className="card-title">Academic Awards</h3>
-            <div className="card-icon">🏆</div>
           </div>
           <div className="card-content">
             <p className="card-description">Track and manage academic achievement awards</p>
           </div>
           <div className="card-actions">
-            <button className="btn primary">🏆 Manage Awards</button>
+            <button className="btn primary">Manage Awards</button>
           </div>
         </div>
         
         <div className="dashboard-card">
           <div className="card-header">
             <h3 className="card-title">Degree Classifications</h3>
-            <div className="card-icon">📜</div>
           </div>
           <div className="card-content">
             <p className="card-description">Review and approve degree classifications</p>
           </div>
           <div className="card-actions">
-            <button className="btn primary">📜 Review Classifications</button>
+            <button className="btn primary">Review Classifications</button>
           </div>
         </div>
         
         <div className="dashboard-card">
           <div className="card-header">
             <h3 className="card-title">Graduation Ceremonies</h3>
-            <div className="card-icon">🎪</div>
           </div>
           <div className="card-content">
             <p className="card-description">Organize and schedule graduation ceremonies</p>
           </div>
           <div className="card-actions">
-            <button className="btn primary">🎪 Schedule Ceremonies</button>
+            <button className="btn primary">Schedule Ceremonies</button>
           </div>
         </div>
       </div>
@@ -1785,57 +1779,248 @@ const AcademicAdminDashboard = () => {
     }
   };
 
-  // Navigation items for sidebar
-  const navigationItems = [
-    { id: 'dashboard', icon: '📊', label: 'Dashboard' },
-    { id: 'students', icon: '👨‍🎓', label: 'Students' },
-    { id: 'supervisors', icon: '👨‍🏫', label: 'Supervisors' },
-    { id: 'assignments', icon: '🔗', label: 'Assignments' },
-    { id: 'registrations', icon: '📋', label: 'Registrations' },
-    { id: 'viva-teams', icon: '🎯', label: 'Viva Teams' },
-    { id: 'reports', icon: '📈', label: 'Reports & Analytics' },
-    { id: 'awards', icon: '🏆', label: 'Awards & Graduation' }
-  ];
-
   // Render functions
   const renderSidebar = () => (
-    <aside className={`academic-admin-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-      <div className="academic-admin-sidebar-header">
-        <h2>{sidebarCollapsed ? 'AA' : 'Academic Admin'}</h2>
-        <button 
-          className="academic-admin-sidebar-toggle"
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        >
-          {sidebarCollapsed ? '→' : '←'}
-        </button>
-      </div>
-      
-      <nav className="academic-admin-sidebar-nav">
-        {navigationItems.map(item => (
-          <button
-            key={item.id}
-            className={`academic-admin-nav-item ${activeSection === item.id ? 'active' : ''}`}
-            onClick={() => setActiveSection(item.id)}
+    <>
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="mobile-overlay"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
+      <aside className={`dashboard-sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${sidebarOpen ? 'mobile-open' : ''}`}>
+        {/* Sidebar Header */}
+        <div className="sidebar-header">
+          <div className="sidebar-logo-section">
+            <img src={logo} alt="Logo" className="sidebar-logo" />
+            <div className="sidebar-branding">
+              <p className="sidebar-portal-name">Academic Admin</p>
+            </div>
+          </div>
+          <button 
+            className="sidebar-toggle"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            aria-label="Toggle sidebar"
           >
-            <span className="academic-admin-nav-icon">{item.icon}</span>
-            {!sidebarCollapsed && <span className="academic-admin-nav-label">{item.label}</span>}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" strokeWidth="2"/>
+            </svg>
           </button>
-        ))}
-      </nav>
-      
-      <div className="academic-admin-sidebar-footer">
-        <button className="academic-admin-logout-btn" onClick={handleLogout}>
-          <span className="academic-admin-nav-icon">🚪</span>
-          {!sidebarCollapsed && <span>Logout</span>}
-        </button>
-      </div>
-    </aside>
+          {/* Mobile Close Button */}
+          <button 
+            className="mobile-close"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close menu"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Sidebar Navigation */}
+        <nav className="sidebar-nav">
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'dashboard' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('dashboard');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                <rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+                <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Dashboard</span>
+            </button>
+          </div>
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'students' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('students');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="8.5" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                <path d="M20 8V6A2 2 0 0 0 18 4H16" stroke="currentColor" strokeWidth="2"/>
+                <path d="M23 11L20 8L17 11" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Students</span>
+            </button>
+          </div>
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'supervisors' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('supervisors');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                <path d="M9 9L11 11L15 7" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Supervisors</span>
+            </button>
+          </div>
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'assignments' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('assignments');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2"/>
+                <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2"/>
+                <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2"/>
+                <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2"/>
+                <polyline points="10,9 9,9 8,9" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Assignments</span>
+            </button>
+          </div>
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'registrations' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('registrations');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M16 4H18C18.5304 4 19.0391 4.21071 19.4142 4.58579C19.7893 4.96086 20 5.46957 20 6V20C20 20.5304 19.7893 21.0391 19.4142 21.4142C19.0391 21.7893 18.5304 22 18 22H6C5.46957 22 4.96086 21.7893 4.58579 21.4142C4.21071 21.0391 4 20.5304 4 20V6C4 5.46957 4.21071 4.96086 4.58579 4.58579C4.96086 4.21071 5.46957 4 6 4H8" stroke="currentColor" strokeWidth="2"/>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1" stroke="currentColor" strokeWidth="2"/>
+                <path d="M9 14L10 15L15 10" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Registrations</span>
+            </button>
+          </div>
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'viva-teams' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('viva-teams');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+                <path d="M23 21V19C23 18.1352 22.7473 17.2922 22.2716 16.5787C21.7959 15.8651 21.1166 15.3085 20.3175 14.9776" stroke="currentColor" strokeWidth="2"/>
+                <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45768C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Viva Teams</span>
+            </button>
+          </div>
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'reports' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('reports');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M3 3V21H21" stroke="currentColor" strokeWidth="2"/>
+                <path d="M9 9L12 6L16 10L21 5" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="9" cy="9" r="1" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="12" cy="6" r="1" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="16" cy="10" r="1" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="21" cy="5" r="1" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Reports</span>
+            </button>
+          </div>
+          <div className="nav-item">
+            <button 
+              className={`nav-link ${activeSection === 'awards' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveSection('awards');
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="8" r="7" stroke="currentColor" strokeWidth="2"/>
+                <path d="M8.21 13.89L7 23L12 20L17 23L15.79 13.88" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              <span className="nav-text">Awards</span>
+            </button>
+          </div>
+        </nav>
+        
+        {/* Sidebar Footer - User Profile */}
+        <div className="sidebar-footer">
+          <div className="user-profile" onClick={() => setUserDropdownOpen(!userDropdownOpen)}>
+            <div className="user-avatar">
+              {user?.first_name?.charAt(0) || user?.username?.charAt(0) || 'A'}
+            </div>
+            <div className="user-info">
+              <p className="user-name">{user?.first_name || user?.username}</p>
+              <p className="user-role">Academic Admin</p>
+            </div>
+            <button className="user-menu-toggle">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" stroke="currentColor" strokeWidth="2"/>
+                <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" stroke="currentColor" strokeWidth="2"/>
+                <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </button>
+          </div>
+          
+          {/* User Dropdown */}
+          <div className={`user-dropdown ${userDropdownOpen ? 'show' : ''}`}>
+            <button 
+              className="dropdown-item"
+              onClick={() => {
+                setActiveSection('profile');
+                setUserDropdownOpen(false);
+                setSidebarOpen(false);
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              Profile
+            </button>
+            <button className="dropdown-item" onClick={logout}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeWidth="2"/>
+                <polyline points="16,17 21,12 16,7" stroke="currentColor" strokeWidth="2"/>
+                <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              Logout
+            </button>
+          </div>
+        </div>
+      </aside>
+    </>
   );
 
   return (
-    <div className="academic-admin-layout">
+    <div className="dashboard-layout">
       {renderSidebar()}
-      <main className={`academic-admin-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <main className={`dashboard-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+        {/* Mobile Menu Button */}
+        <button 
+          className="mobile-menu-btn"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open navigation menu"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+        </button>
+        
         {renderContent()}
       </main>
 
@@ -2112,193 +2297,266 @@ const CreateStudentModal = ({ onClose, onSave }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay show" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Create New Student</h2>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+          <h3 className="modal-title">Create New Student</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
-        {error && <div className="error-message">{error}</div>}
-        
-        <form onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Student Number:</label>
-              <input
-                type="text"
-                value={formData.student_number}
-                onChange={(e) => setFormData({...formData, student_number: e.target.value})}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Cohort:</label>
-              <input
-                type="text"
-                value={formData.cohort}
-                onChange={(e) => setFormData({...formData, cohort: e.target.value})}
-                required
-              />
-            </div>
-          </div>
+        <div className="modal-body">
+          {error && <div className="error-message">{error}</div>}
+          
+          <form onSubmit={handleSubmit} className="student-form compact-form">
+            {/* Basic Information Section */}
+            <div className="form-section">
+         
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label-sm">
+                    Student Number:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.student_number}
+                    onChange={(e) => setFormData({...formData, student_number: e.target.value})}
+                    placeholder="Enter student number"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label-sm">
+                    Cohort:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.cohort}
+                    onChange={(e) => setFormData({...formData, cohort: e.target.value})}
+                    placeholder="Enter cohort"
+                    required
+                  />
+                </div>
+              </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Forename:</label>
-              <input
-                type="text"
-                value={formData.forename}
-                onChange={(e) => setFormData({...formData, forename: e.target.value})}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Surname:</label>
-              <input
-                type="text"
-                value={formData.surname}
-                onChange={(e) => setFormData({...formData, surname: e.target.value})}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Course Code:</label>
-              <input
-                type="text"
-                value={formData.course_code}
-                onChange={(e) => setFormData({...formData, course_code: e.target.value})}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Mode:</label>
-              <select
-                value={formData.mode}
-                onChange={(e) => setFormData({...formData, mode: e.target.value})}
-                required
-              >
-                <option value="">Select Mode</option>
-                <option value="Full-time">Full-time</option>
-                <option value="Part-time">Part-time</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Quercus Course Name:</label>
-            <input
-              type="text"
-              value={formData.quercus_course_name}
-              onChange={(e) => setFormData({...formData, quercus_course_name: e.target.value})}
-            />
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label>Subject Area:</label>
-              <input
-                type="text"
-                value={formData.subject_area}
-                onChange={(e) => setFormData({...formData, subject_area: e.target.value})}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Programme of Study:</label>
-              <input
-                type="text"
-                value={formData.programme_of_study}
-                onChange={(e) => setFormData({...formData, programme_of_study: e.target.value})}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Previous Institution:</label>
-            <input
-              type="text"
-              value={formData.previous_institution}
-              onChange={(e) => setFormData({...formData, previous_institution: e.target.value})}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Student Notes:</label>
-            <textarea
-              value={formData.student_notes}
-              onChange={(e) => setFormData({...formData, student_notes: e.target.value})}
-              rows="3"
-            />
-          </div>
-
-          <div className="checkbox-group">
-            <div className="checkbox-item">
-              <input
-                type="checkbox"
-                id="international_student"
-                checked={formData.international_student}
-                onChange={(e) => setFormData({...formData, international_student: e.target.checked})}
-              />
-              <label htmlFor="international_student">International Student</label>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label-sm">
+                    First Name:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.forename}
+                    onChange={(e) => setFormData({...formData, forename: e.target.value})}
+                    placeholder="Enter first name"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label-sm">
+                    Last Name:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.surname}
+                    onChange={(e) => setFormData({...formData, surname: e.target.value})}
+                    placeholder="Enter last name"
+                    required
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="checkbox-item">
-              <input
-                type="checkbox"
-                id="previous_ehu_student"
-                checked={formData.previous_ehu_student}
-                onChange={(e) => setFormData({...formData, previous_ehu_student: e.target.checked})}
-              />
-              <label htmlFor="previous_ehu_student">Previous EHU Student</label>
+            {/* Academic Information Section */}
+            <div className="form-section">
+           
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label-sm">
+                    Course Code:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.course_code}
+                    onChange={(e) => setFormData({...formData, course_code: e.target.value})}
+                    placeholder="Enter course code"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label-sm">
+                    Study Mode:
+                  </label>
+                  <select
+                    className="form-input"
+                    value={formData.mode}
+                    onChange={(e) => setFormData({...formData, mode: e.target.value})}
+                    required
+                  >
+                    <option value="">Select Mode</option>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label-sm">
+                  Quercus Course Name:
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.quercus_course_name}
+                  onChange={(e) => setFormData({...formData, quercus_course_name: e.target.value})}
+                  placeholder="Enter Quercus course name"
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label-sm">
+                    Subject Area:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.subject_area}
+                    onChange={(e) => setFormData({...formData, subject_area: e.target.value})}
+                    placeholder="Enter subject area"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label-sm">
+                    Programme of Study:
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.programme_of_study}
+                    onChange={(e) => setFormData({...formData, programme_of_study: e.target.value})}
+                    placeholder="Enter programme"
+                    required
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="checkbox-item">
-              <input
-                type="checkbox"
-                id="previous_ehu_undergraduate"
-                checked={formData.previous_ehu_undergraduate}
-                onChange={(e) => setFormData({...formData, previous_ehu_undergraduate: e.target.checked})}
-              />
-              <label htmlFor="previous_ehu_undergraduate">Previous EHU Undergraduate</label>
+            {/* Background Information Section */}
+            <div className="form-section">
+       
+              <div className="form-group">
+                <label className="form-label-sm">
+                  Previous Institution:
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.previous_institution}
+                  onChange={(e) => setFormData({...formData, previous_institution: e.target.value})}
+                  placeholder="Enter previous institution"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label-sm">
+                  Student Notes:
+                </label>
+                <textarea
+                  className="form-input"
+                  value={formData.student_notes}
+                  onChange={(e) => setFormData({...formData, student_notes: e.target.value})}
+                  rows="3"
+                  placeholder="Enter any additional notes..."
+                />
+              </div>
             </div>
 
-            <div className="checkbox-item">
-              <input
-                type="checkbox"
-                id="previous_ehu_pgt_student"
-                checked={formData.previous_ehu_pgt_student}
-                onChange={(e) => setFormData({...formData, previous_ehu_pgt_student: e.target.checked})}
-              />
-              <label htmlFor="previous_ehu_pgt_student">Previous EHU PGT Student</label>
+            {/* Student Status Section */}
+            <div className="form-section">
+              <h5 className="section-subtitle">Student Status</h5>
+              <div className="checkbox-grid">
+                <div className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id="international_student"
+                    checked={formData.international_student}
+                    onChange={(e) => setFormData({...formData, international_student: e.target.checked})}
+                  />
+                  <label htmlFor="international_student" className="checkbox-label">
+                    International Student
+                  </label>
+                </div>
+
+                <div className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id="previous_ehu_student"
+                    checked={formData.previous_ehu_student}
+                    onChange={(e) => setFormData({...formData, previous_ehu_student: e.target.checked})}
+                  />
+                  <label htmlFor="previous_ehu_student" className="checkbox-label">
+                    Previous EHU Student
+                  </label>
+                </div>
+
+                <div className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id="previous_ehu_undergraduate"
+                    checked={formData.previous_ehu_undergraduate}
+                    onChange={(e) => setFormData({...formData, previous_ehu_undergraduate: e.target.checked})}
+                  />
+                  <label htmlFor="previous_ehu_undergraduate" className="checkbox-label">
+                    Previous EHU Undergraduate
+                  </label>
+                </div>
+
+                <div className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id="previous_ehu_pgt_student"
+                    checked={formData.previous_ehu_pgt_student}
+                    onChange={(e) => setFormData({...formData, previous_ehu_pgt_student: e.target.checked})}
+                  />
+                  <label htmlFor="previous_ehu_pgt_student" className="checkbox-label">
+                    Previous EHU PGT Student
+                  </label>
+                </div>
+
+                <div className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id="previous_ehu_mres_student"
+                    checked={formData.previous_ehu_mres_student}
+                    onChange={(e) => setFormData({...formData, previous_ehu_mres_student: e.target.checked})}
+                  />
+                  <label htmlFor="previous_ehu_mres_student" className="checkbox-label">
+                    Previous EHU MRes Student
+                  </label>
+                </div>
+              </div>
             </div>
 
-            <div className="checkbox-item">
-              <input
-                type="checkbox"
-                id="previous_ehu_mres_student"
-                checked={formData.previous_ehu_mres_student}
-                onChange={(e) => setFormData({...formData, previous_ehu_mres_student: e.target.checked})}
-              />
-              <label htmlFor="previous_ehu_mres_student">Previous EHU MRes Student</label>
+            <div className="modal-actions">
+              <button type="button" className="btn secondary" onClick={onClose}>Cancel</button>
+              <button type="submit" className="btn primary" disabled={loading}>
+                {loading ? 'Creating...' : 'Create Student'}
+              </button>
             </div>
-          </div>
-
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Student'}
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -2340,15 +2598,18 @@ const EditStudentModal = ({ student, onClose, onSave }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay show" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Edit Student</h2>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+          <h3 className="modal-title">Edit Student</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
-        {error && <div className="error-message">{error}</div>}
-        
+        <div className="modal-body">
+          {error && <div className="error-message">{error}</div>}
+          
         <form onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-group">
@@ -2527,6 +2788,7 @@ const EditStudentModal = ({ student, onClose, onSave }) => {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
@@ -2534,14 +2796,17 @@ const EditStudentModal = ({ student, onClose, onSave }) => {
 
 const StudentDetailModal = ({ student, onClose }) => {
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay show" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Student Details</h2>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+          <h3 className="modal-title">Student Details</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
-        <div className="detail-content">
+        <div className="modal-body">
+          <div className="detail-content">
           <div className="detail-section">
             <h3>Basic Information</h3>
             <div className="detail-row">
@@ -2635,6 +2900,7 @@ const StudentDetailModal = ({ student, onClose }) => {
         <div className="modal-actions">
           <button className="btn-secondary" onClick={onClose}>Close</button>
         </div>
+        </div>
       </div>
     </div>
   );
@@ -2669,16 +2935,19 @@ const CreateSupervisorModal = ({ onClose, onSave }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay show" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Create New Supervisor</h2>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+          <h3 className="modal-title">Create New Supervisor</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
-        {error && <div className="error-message">{error}</div>}
-        
-        <form onSubmit={handleSubmit}>
+        <div className="modal-body">
+          {error && <div className="error-message">{error}</div>}
+          
+          <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Title:</label>
             <select
@@ -2776,6 +3045,7 @@ const CreateSupervisorModal = ({ onClose, onSave }) => {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
@@ -2810,13 +3080,16 @@ const EditSupervisorModal = ({ supervisor, onClose, onSave }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay show" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Edit Supervisor</h2>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+          <h3 className="modal-title">Edit Supervisor</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
+        <div className="modal-body">
         {error && <div className="error-message">{error}</div>}
         
         <form onSubmit={handleSubmit}>
@@ -2917,6 +3190,7 @@ const EditSupervisorModal = ({ supervisor, onClose, onSave }) => {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
@@ -2924,14 +3198,17 @@ const EditSupervisorModal = ({ supervisor, onClose, onSave }) => {
 
 const SupervisorDetailModal = ({ supervisor, onClose }) => {
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay show" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Supervisor Details</h2>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+          <h3 className="modal-title">Supervisor Details</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
-        <div className="detail-content">
+        <div className="modal-body">
+          <div className="detail-content">
           <div className="detail-row">
             <label>Supervisor ID:</label>
             <span>{supervisor.supervisor_id}</span>
@@ -2960,6 +3237,7 @@ const SupervisorDetailModal = ({ supervisor, onClose }) => {
         
         <div className="modal-actions">
           <button className="btn-secondary" onClick={onClose}>Close</button>
+        </div>
         </div>
       </div>
     </div>
@@ -3018,13 +3296,16 @@ const RegistrationModal = ({ registration, onClose, onSave }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay show" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{registration ? 'Edit Registration' : 'Create New Registration'}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <h3 className="modal-title">{registration ? 'Edit Registration' : 'Create New Registration'}</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
+        <div className="modal-body">
         {error && <div className="error-message">{error}</div>}
         
         <form onSubmit={handleSubmit}>
@@ -3129,6 +3410,7 @@ const RegistrationModal = ({ registration, onClose, onSave }) => {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
@@ -3136,13 +3418,16 @@ const RegistrationModal = ({ registration, onClose, onSave }) => {
 
 const RegistrationDetailModal = ({ registration, onClose }) => {
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay show" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Registration Details</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <h3 className="modal-title">Registration Details</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
+        <div className="modal-body">
         <div className="detail-content">
           <div className="detail-section">
             <h3>Basic Information</h3>
@@ -3225,6 +3510,7 @@ const RegistrationDetailModal = ({ registration, onClose }) => {
         <div className="modal-actions">
           <button className="btn btn-secondary" onClick={onClose}>Close</button>
         </div>
+        </div>
       </div>
     </div>
   );
@@ -3253,13 +3539,16 @@ const ExtensionModal = ({ registration, onClose, onSave }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay show" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Request Registration Extension</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <h3 className="modal-title">Request Registration Extension</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
+        <div className="modal-body">
         {error && <div className="error-message">{error}</div>}
         
         <div className="detail-content">
@@ -3304,6 +3593,7 @@ const ExtensionModal = ({ registration, onClose, onSave }) => {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
@@ -3334,13 +3624,16 @@ const ProfileModal = ({ user, onClose, onSave }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay show" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Update Profile</h2>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+          <h3 className="modal-title">Update Profile</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
+        <div className="modal-body">
         {error && <div className="error-message">{error}</div>}
         
         <form onSubmit={handleSubmit}>
@@ -3390,6 +3683,7 @@ const ProfileModal = ({ user, onClose, onSave }) => {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
@@ -3428,11 +3722,13 @@ const ChangePasswordModal = ({ onClose, onSave }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay show" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Change Password</h2>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+          <h3 className="modal-title">Change Password</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
         {error && <div className="error-message">{error}</div>}
@@ -3513,7 +3809,7 @@ const AssignmentDetailModal = ({ assignment, onClose }) => {
 
   if (loading) {
     return (
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay show" onClick={onClose}>
         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="loading">Loading...</div>
         </div>
@@ -3522,11 +3818,13 @@ const AssignmentDetailModal = ({ assignment, onClose }) => {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay show" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Assignment Details</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <h3 className="modal-title">Assignment Details</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
         <div className="detail-content">
@@ -3680,7 +3978,7 @@ const AssignmentModal = ({ assignment, onClose, onSave }) => {
 
   if (loadingData) {
     return (
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay show" onClick={onClose}>
         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="loading">Loading...</div>
         </div>
@@ -3689,11 +3987,13 @@ const AssignmentModal = ({ assignment, onClose, onSave }) => {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay show" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{assignment ? 'Edit Assignment' : 'Create New Assignment'}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <h3 className="modal-title">{assignment ? 'Edit Assignment' : 'Create New Assignment'}</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
         {error && <div className="error-message">{error}</div>}

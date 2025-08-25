@@ -981,7 +981,7 @@ const SystemAdminDashboard = () => {
       <div className="content-grid">
         <div className="info-panel">
           <div className="panel-header">
-            <h3 className="panel-title">🚀 Quick Actions</h3>
+            <h3 className="panel-title"> Quick Actions</h3>
           </div>
           <div className="professional-list">
             <div className="list-item">
@@ -1027,7 +1027,7 @@ const SystemAdminDashboard = () => {
           </div>
         </div>
 
-        <div className="info-panel">
+        {/* <div className="info-panel">
           <div className="panel-header">
             <h3 className="panel-title">📊 System Overview</h3>
           </div>
@@ -1053,7 +1053,7 @@ const SystemAdminDashboard = () => {
               <span className="status-badge active">Excellent</span>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );
@@ -1074,12 +1074,12 @@ const SystemAdminDashboard = () => {
             type="number"
             placeholder="Enter User ID"
             value={userIdSearch}
-            onChange={(e) => setUserIdSearch(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearchUserById()}
+            onChange={e => setUserIdSearch(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && handleSearchUserById()}
             className="form-input"
           />
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={handleSearchUserById}
             disabled={searchingById}
@@ -1088,7 +1088,7 @@ const SystemAdminDashboard = () => {
             {searchingById ? 'Searching...' : '🔍 Search User'}
           </button>
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={fetchUsers}
             disabled={usersLoading}
@@ -1252,7 +1252,7 @@ const SystemAdminDashboard = () => {
             className="form-input"
           />
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={handleSearchStudentByNumber}
             disabled={searchingStudentById}
@@ -1261,7 +1261,7 @@ const SystemAdminDashboard = () => {
             {searchingStudentById ? 'Searching...' : '🔍 Search'}
           </button>
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={fetchStudents}
             disabled={studentsLoading}
@@ -1421,7 +1421,7 @@ const SystemAdminDashboard = () => {
             className="form-input"
           />
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={async () => {
               if (!supervisorIdSearch.trim()) return;
@@ -1443,7 +1443,7 @@ const SystemAdminDashboard = () => {
             {searchingSupervisorById ? 'Searching...' : '🔍 Search'}
           </button>
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={fetchSupervisors} 
             disabled={supervisorsLoading}
@@ -1703,7 +1703,7 @@ const SystemAdminDashboard = () => {
             className="form-input"
           />
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={fetchRegistrations} 
             className="btn secondary"
@@ -1737,7 +1737,7 @@ const SystemAdminDashboard = () => {
             className="form-input"
           />
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={async () => {
               if (!registrationIdSearch.trim()) return;
@@ -1910,7 +1910,7 @@ const SystemAdminDashboard = () => {
             className="form-input"
           />
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={fetchVivaTeams} 
             className="btn secondary"
@@ -1980,9 +1980,7 @@ const SystemAdminDashboard = () => {
                 <th>Student Number</th>
                 <th>Stage</th>
                 <th>Status</th>
-                <th>Internal Examiner 1</th>
-                <th>Internal Examiner 2</th>
-                <th>External Examiner</th>
+                <th>Examiners</th>
                 <th>Proposed Date</th>
                 <th>Scheduled Date</th>
                 <th>Location</th>
@@ -2010,9 +2008,22 @@ const SystemAdminDashboard = () => {
                        vivaTeam.status}
                     </span>
                   </td>
-                  <td>{vivaTeam.internal_examiner_1_id || 'N/A'}</td>
-                  <td>{vivaTeam.internal_examiner_2_id || 'N/A'}</td>
-                  <td>{vivaTeam.external_examiner_name || 'N/A'}</td>
+                  <td className="examiners-cell">
+                    <div className="examiners-list">
+                      <div className="examiner-item">
+                        <span className="examiner-label">Supervisor 1 ID:</span>
+                        <span className="examiner-name">{vivaTeam.internal_examiner_1_id || 'N/A'}</span>
+                      </div>
+                      <div className="examiner-item">
+                        <span className="examiner-label">Supervisor 2 ID:</span>
+                        <span className="examiner-name">{vivaTeam.internal_examiner_2_id || 'N/A'}</span>
+                      </div>
+                      <div className="examiner-item">
+                        <span className="examiner-label">External Examiner:</span>
+                        <span className="examiner-name">{vivaTeam.external_examiner_name || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </td>
                   <td>{vivaTeam.proposed_date ? new Date(vivaTeam.proposed_date).toLocaleDateString() : 'N/A'}</td>
                   <td>{vivaTeam.scheduled_date ? new Date(vivaTeam.scheduled_date).toLocaleDateString() : 'Not Scheduled'}</td>
                   <td>{vivaTeam.location || 'TBD'}</td>
@@ -2137,7 +2148,7 @@ const SystemAdminDashboard = () => {
             className="form-input"
           />
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={() => fetchSubmissions(submissionSearchTerm)} 
             className="btn secondary"
@@ -2176,7 +2187,7 @@ const SystemAdminDashboard = () => {
             <option value="annual_report">Annual Report</option>
           </select>
         </div>
-        <div className="form-group">
+        <div className="form-group button-shift">
           <button 
             onClick={() => fetchSubmissions(submissionSearchTerm, submissionStatusFilter, submissionTypeFilter)}
             className="btn primary"
@@ -4752,6 +4763,31 @@ const VivaTeamCreateModal = ({ onClose, onSave }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [students, setStudents] = useState([]);
+  const [supervisors, setSupervisors] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  // Fetch students and supervisors when modal opens
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoadingData(true);
+        const [studentsResponse, supervisorsResponse] = await Promise.all([
+          studentAPI.getAllStudents(),
+          supervisorAPI.getAllSupervisors()
+        ]);
+        setStudents(studentsResponse || []);
+        setSupervisors(supervisorsResponse || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setError('Failed to load students and supervisors');
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -4789,130 +4825,152 @@ const VivaTeamCreateModal = ({ onClose, onSave }) => {
         <div className="modal-body">
         {error && <div className="error-message">{error}</div>}
         
-        <form onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Student Number:</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.student_number}
-                onChange={(e) => setFormData({...formData, student_number: e.target.value})}
-                required
-                placeholder="Enter student number"
-              />
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">Stage:</label>
-              <select
-                className="form-input"
-                value={formData.stage}
-                onChange={(e) => setFormData({...formData, stage: e.target.value})}
-                required
-              >
-                <option value="registration">Registration</option>
-                <option value="progression">Progression</option>
-                <option value="final">Final</option>
-              </select>
-            </div>
+        {loadingData ? (
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Loading students and supervisors...</div>
           </div>
-          
-          <div className="form-section">
-            <h3>Internal Examiners</h3>
+        ) : (
+          <form onSubmit={handleSubmit} className="compact-form">
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Internal Examiner 1 ID:</label>
-                <input
-                  type="number"
+                <label className="form-label">Student:</label>
+                <select
                   className="form-input"
-                  value={formData.internal_examiner_1_id}
-                  onChange={(e) => setFormData({...formData, internal_examiner_1_id: e.target.value})}
-                  placeholder="Enter examiner ID"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Internal Examiner 2 ID:</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  value={formData.internal_examiner_2_id}
-                  onChange={(e) => setFormData({...formData, internal_examiner_2_id: e.target.value})}
-                  placeholder="Enter examiner ID"
-                />
-              </div>
-            </div>
-          </div>
-          
-          <div className="form-section">
-            <h3>External Examiner</h3>
-            <div className="form-group">
-              <label className="form-label">External Examiner Name:</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.external_examiner_name}
-                onChange={(e) => setFormData({...formData, external_examiner_name: e.target.value})}
-                required
-                placeholder="Enter external examiner name"
-              />
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">External Examiner Email:</label>
-                <input
-                  type="email"
-                  className="form-input"
-                  value={formData.external_examiner_email}
-                  onChange={(e) => setFormData({...formData, external_examiner_email: e.target.value})}
+                  value={formData.student_number}
+                  onChange={(e) => setFormData({...formData, student_number: e.target.value})}
                   required
-                  placeholder="examiner@university.edu"
-                />
+                >
+                  <option value="">Select a student</option>
+                  {students.map(student => (
+                    <option key={student.student_number} value={student.student_number}>
+                      {student.student_number} - {student.first_name} {student.last_name}
+                    </option>
+                  ))}
+                </select>
               </div>
               
               <div className="form-group">
-                <label className="form-label">External Examiner Institution:</label>
+                <label className="form-label">Stage:</label>
+                <select
+                  className="form-input"
+                  value={formData.stage}
+                  onChange={(e) => setFormData({...formData, stage: e.target.value})}
+                  required
+                >
+                  <option value="registration">Registration</option>
+                  <option value="progression">Progression</option>
+                  <option value="final">Final</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="form-section">
+             
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label-sm">Supervisor 1:</label>
+                  <select
+                    className="form-input"
+                    value={formData.internal_examiner_1_id}
+                    onChange={(e) => setFormData({...formData, internal_examiner_1_id: e.target.value})}
+                  >
+                    <option value="">Select Supervisor 1</option>
+                    {supervisors.map(supervisor => (
+                      <option key={supervisor.id} value={supervisor.id}>
+                        {supervisor.supervisor_id || supervisor.id} - {supervisor.first_name} {supervisor.last_name} ({supervisor.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label-sm">Supervisor 2:</label>
+                  <select
+                    className="form-input"
+                    value={formData.internal_examiner_2_id}
+                    onChange={(e) => setFormData({...formData, internal_examiner_2_id: e.target.value})}
+                  >
+                    <option value="">Select Supervisor 2</option>
+                    {supervisors.map(supervisor => (
+                      <option key={supervisor.id} value={supervisor.id}>
+                        {supervisor.supervisor_id || supervisor.id} - {supervisor.first_name} {supervisor.last_name} ({supervisor.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div className="form-section">
+     
+              <div className="form-group">
+                <label className="form-label-sm">Examiner Name:</label>
                 <input
                   type="text"
                   className="form-input"
-                  value={formData.external_examiner_institution}
-                  onChange={(e) => setFormData({...formData, external_examiner_institution: e.target.value})}
+                  value={formData.external_examiner_name}
+                  onChange={(e) => setFormData({...formData, external_examiner_name: e.target.value})}
                   required
-                  placeholder="University/Institution name"
-                />
-              </div>
-            </div>
-          </div>
-          
-          <div className="form-section">
-            <h3>Viva Details</h3>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Proposed Date:</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={formData.proposed_date}
-                  onChange={(e) => setFormData({...formData, proposed_date: e.target.value})}
-                  required
+                  placeholder="External examiner name"
                 />
               </div>
               
-              <div className="form-group">
-                <label className="form-label">Location:</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={formData.location}
-                  onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  placeholder="Room/Location for viva"
-                />
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label-sm">Email:</label>
+                  <input
+                    type="email"
+                    className="form-input"
+                    value={formData.external_examiner_email}
+                    onChange={(e) => setFormData({...formData, external_examiner_email: e.target.value})}
+                    required
+                    placeholder="examiner@university.edu"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label-sm">Institution:</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.external_examiner_institution}
+                    onChange={(e) => setFormData({...formData, external_examiner_institution: e.target.value})}
+                    required
+                    placeholder="University/Institution"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </form>
+            
+            <div className="form-section">
+         
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label-sm">Proposed Date:</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={formData.proposed_date}
+                    onChange={(e) => setFormData({...formData, proposed_date: e.target.value})}
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label-sm">Location:</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={formData.location}
+                    onChange={(e) => setFormData({...formData, location: e.target.value})}
+                    placeholder="Room/Location"
+                  />
+                </div>
+              </div>
+            </div>
+          </form>
+        )}
         </div>
         
         <div className="modal-footer">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { studentAPI, supervisorAPI, assignmentAPI, registrationAPI, authAPI, vivaTeamAPI, submissionAPI } from '../utils/api';
+import { studentAPI, supervisorAPI, assignmentAPI, authAPI, vivaTeamAPI, submissionAPI } from '../utils/api';
 import '../styles/shared-dashboard.css';
 import logo from '../image/logo.png';
 
@@ -12,7 +12,6 @@ const StudentDashboard = () => {
   // Student data states
   const [studentData, setStudentData] = useState(null);
   const [studentSupervisors, setStudentSupervisors] = useState([]);
-  const [studentRegistration, setStudentRegistration] = useState(null);
   const [allSupervisors, setAllSupervisors] = useState([]);
   const [vivaTeams, setVivaTeams] = useState([]);
   
@@ -32,12 +31,6 @@ const StudentDashboard = () => {
     confirm_password: ''
   });
   
-  // Extension request state
-  const [extensionRequest, setExtensionRequest] = useState({
-    extension_days: '',
-    reason: ''
-  });
-  
   // Submission states
   const [submissions, setSubmissions] = useState([]);
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
@@ -46,7 +39,7 @@ const StudentDashboard = () => {
   const [showSubmissionDetailModal, setShowSubmissionDetailModal] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [submissionForm, setSubmissionForm] = useState({
-    submission_type: 'registration',
+    submission_type: 'thesis',
     title: '',
     description: ''
   });
@@ -54,30 +47,20 @@ const StudentDashboard = () => {
   const [submissionError, setSubmissionError] = useState('');
   
   // Progress tracking states
-  const [currentStage, setCurrentStage] = useState('registration');
+  const [currentStage, setCurrentStage] = useState('proposal');
   const [showStageSubmissionModal, setShowStageSubmissionModal] = useState(false);
-  const [stageSubmissionType, setStageSubmissionType] = useState('registration');
-  
-  // Registration states
-  const [registrations, setRegistrations] = useState([]);
-  const [registrationsLoading, setRegistrationsLoading] = useState(false);
-  const [registrationFilters, setRegistrationFilters] = useState({
-    status: '',
-    limit: 100
-  });
+  const [stageSubmissionType, setStageSubmissionType] = useState('thesis');
   
   // Loading and error states
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [profileError, setProfileError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [extensionError, setExtensionError] = useState('');
   const [profileLoading, setProfileLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   
   // Modal states
-  const [showExtensionModal, setShowExtensionModal] = useState(false);
   const [showSupervisorModal, setShowSupervisorModal] = useState(false);
   const [selectedSupervisor, setSelectedSupervisor] = useState(null);
   const [showVivaTeamModal, setShowVivaTeamModal] = useState(false);
@@ -87,13 +70,6 @@ const StudentDashboard = () => {
     fetchStudentData();
     fetchUserProfile();
   }, []);
-
-  // Refetch registrations when filters change
-  useEffect(() => {
-    if (activeSection === 'registrations') {
-      fetchRegistrations();
-    }
-  }, [registrationFilters, activeSection]);
 
   const fetchStudentData = async () => {
     try {
@@ -108,10 +84,6 @@ const StudentDashboard = () => {
       const supervisorsResponse = await assignmentAPI.getStudentSupervisors(user.username);
       setStudentSupervisors(supervisorsResponse);
       
-      // Get student registration
-      const registrationResponse = await registrationAPI.getRegistrationByStudent(user.username);
-      setStudentRegistration(registrationResponse);
-      
       // Get all supervisors for reference
       const allSupervisorsResponse = await supervisorAPI.getAllSupervisors();
       setAllSupervisors(allSupervisorsResponse);
@@ -122,9 +94,6 @@ const StudentDashboard = () => {
       
       // Get student submissions
       await fetchSubmissions();
-      
-      // Get student registrations
-      await fetchRegistrations();
       
     } catch (err) {
       setError(err.message || 'Failed to fetch student data');
@@ -219,67 +188,6 @@ const StudentDashboard = () => {
     }
   };
 
-  // Registration functions
-  const fetchRegistrations = async () => {
-    try {
-      setRegistrationsLoading(true);
-      const response = await registrationAPI.getAllRegistrations(
-        0, 
-        registrationFilters.limit, 
-        user.username, // Use current user's username as student_number
-        registrationFilters.status
-      );
-      setRegistrations(response || []);
-    } catch (err) {
-      console.error('Failed to fetch registrations:', err);
-      setError('Failed to fetch registrations: ' + (err.message || 'Unknown error'));
-      setRegistrations([]);
-    } finally {
-      setRegistrationsLoading(false);
-    }
-  };
-
-  const handleRegistrationFilterChange = (filterName, value) => {
-    setRegistrationFilters(prev => ({
-      ...prev,
-      [filterName]: value
-    }));
-  };
-
-  const handleExtensionRequest = async () => {
-    try {
-      setExtensionError('');
-      setSuccessMessage('');
-      
-      if (!extensionRequest.extension_days || !extensionRequest.reason) {
-        setExtensionError('Please fill in all fields');
-        return;
-      }
-      
-      if (extensionRequest.extension_days < 1 || extensionRequest.extension_days > 365) {
-        setExtensionError('Extension days must be between 1 and 365');
-        return;
-      }
-      
-      await registrationAPI.requestExtension(
-        studentRegistration.registration_id,
-        parseInt(extensionRequest.extension_days),
-        extensionRequest.reason
-      );
-      
-      setSuccessMessage('Extension request submitted successfully!');
-      setShowExtensionModal(false);
-      setExtensionRequest({ extension_days: '', reason: '' });
-      
-      // Refresh registration data
-      const registrationResponse = await registrationAPI.getRegistrationByStudent(user.username);
-      setStudentRegistration(registrationResponse);
-      
-    } catch (err) {
-      setExtensionError(err.message || 'Failed to submit extension request');
-    }
-  };
-
   // Submission handler functions
   const handleCreateSubmission = async (e) => {
     e.preventDefault();
@@ -303,7 +211,7 @@ const StudentDashboard = () => {
       setSuccessMessage('Submission created successfully!');
       setShowCreateSubmissionModal(false);
       setSubmissionForm({
-        submission_type: 'registration',
+        submission_type: 'thesis',
         title: '',
         description: ''
       });
@@ -384,7 +292,7 @@ const StudentDashboard = () => {
     const stageVivaTeams = vivaTeams.filter(vt => vt.stage === stage);
     
     if (stageVivaTeams.length === 0) {
-      return stage === 'registration' ? 'In Progress' : 'Pending';
+      return 'Pending';
     }
     
     // Check if any viva team is completed with pass
@@ -399,7 +307,7 @@ const StudentDashboard = () => {
     const proposedViva = stageVivaTeams.find(vt => vt.status === 'proposed');
     if (proposedViva) return 'Viva Proposed';
     
-    return stage === 'registration' ? 'In Progress' : 'Pending';
+    return 'Pending';
   };
   
   const getStageSubmissions = (submissionType) => {
@@ -408,7 +316,6 @@ const StudentDashboard = () => {
   
   const getStageDeadline = (stage) => {
     const deadlines = {
-      registration: 'September 15, 2024',
       progression: 'March 2025',
       final: 'September 2025'
     };
@@ -417,17 +324,16 @@ const StudentDashboard = () => {
   
   const getSubmissionTypeForStage = (stage) => {
     const typeMap = {
-      registration: 'registration',
       progression: 'annual_report',
       final: 'thesis'
     };
-    return typeMap[stage] || 'registration';
+    return typeMap[stage] || 'thesis';
   };
   
   const handleStageSubmissionCreate = async (stage) => {
     // Reset form to default values
     setSubmissionForm({
-      submission_type: 'registration',
+      submission_type: 'thesis',
       title: '',
       description: ''
     });
@@ -540,21 +446,6 @@ const StudentDashboard = () => {
           </div>
           <div className="nav-item">
             <button 
-              className={`nav-link ${activeSection === 'registrations' ? 'active' : ''}`}
-              onClick={() => {
-                setActiveSection('registrations');
-                setSidebarOpen(false);
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M9 11H15M9 15H15M17 21H7C6.46957 21 5.96086 20.7893 5.58579 20.4142C5.21071 20.0391 5 19.5304 5 19V5C5 4.46957 5.21071 3.96086 5.58579 3.58579C5.96086 3.21071 6.46957 3 7 3H12.586C12.8512 3.00006 13.1055 3.10545 13.293 3.293L19.707 9.707C19.8946 9.89449 19.9999 10.1488 20 10.414V19C20 19.5304 19.7893 20.0391 19.4142 20.4142C19.0391 20.7893 18.5304 21 18 21H17Z" stroke="currentColor" strokeWidth="2"/>
-                <path d="M13 3V9H19" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-              <span className="nav-text">Registrations</span>
-            </button>
-          </div>
-          <div className="nav-item">
-            <button 
               className={`nav-link ${activeSection === 'viva-teams' ? 'active' : ''}`}
               onClick={() => {
                 setActiveSection('viva-teams');
@@ -645,23 +536,7 @@ const StudentDashboard = () => {
       </div>
       
       {/* Statistics Grid */}
-      <div className="stats-grid">
-        <div className="stats-card">
-          <div className="stats-value">
-            {studentRegistration?.registration_status === 'approved' ? '✅' :
-             studentRegistration?.registration_status === 'pending' ? '⏳' :
-             studentRegistration?.registration_status === 'rejected' ? '❌' : '❓'}
-          </div>
-          <div className="stats-label">Registration Status</div>
-          <span className={`status-badge ${
-            studentRegistration?.registration_status === 'approved' ? 'approved' :
-            studentRegistration?.registration_status === 'pending' ? 'pending' :
-            'inactive'
-          }`}>
-            {studentRegistration?.registration_status || 'Not Available'}
-          </span>
-        </div>
-        
+      <div className="stats-grid">        
         <div className="stats-card">
           <div className="stats-value">{studentSupervisors.length}</div>
           <div className="stats-label">Supervisors</div>
@@ -687,96 +562,48 @@ const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* Student Information */}
-      <div className="dashboard-card">
-        <div className="card-header">
-          <h2 className="card-title">Personal Information</h2>
-        </div>
-        {studentData && (
-          <div className="content-grid two-column">
-            <div className="info-panel">
-              <h4>Student Number</h4>
-              <p>{studentData.student_number}</p>
-            </div>
-            <div className="info-panel">
-              <h4>Full Name</h4>
-              <p>{studentData.forename} {studentData.surname}</p>
-            </div>
-            <div className="info-panel">
-              <h4>Cohort</h4>
-              <p>{studentData.cohort}</p>
-            </div>
-            <div className="info-panel">
-              <h4>Course Code</h4>
-              <p>{studentData.course_code}</p>
-            </div>
-            <div className="info-panel">
-              <h4>Programme of Study</h4>
-              <p>{studentData.programme_of_study}</p>
-            </div>
-            <div className="info-panel">
-              <h4>Mode</h4>
-              <p>{studentData.mode}</p>
-            </div>
-            <div className="info-panel">
-              <h4>Subject Area</h4>
-              <p>{studentData.subject_area}</p>
-            </div>
-            <div className="info-panel">
-              <h4>International Student</h4>
-              <p>{studentData.international_student ? 'Yes' : 'No'}</p>
-            </div>
-          </div>
-        )}
+      {/* Student Information - Professional Rows */}
+      <div className="page-header">
+        <h2 className="page-title">Personal Information</h2>
+        <p className="page-subtitle">Your student details and academic information</p>
       </div>
-
-      {/* Registration Information */}
-      <div className="dashboard-card">
-        <div className="card-header">
-          <h2 className="card-title">Registration Information</h2>
-          {studentRegistration && studentRegistration.registration_status !== 'approved' && (
-            <button 
-              onClick={() => setShowExtensionModal(true)}
-              className="btn primary"
-            >
-              Request Extension
-            </button>
-          )}
-        </div>
-        {studentRegistration && (
-          <div className="content-grid two-column">
-            <div className="info-panel highlight">
-              <h4>Status</h4>
-              <span className={`status-badge ${studentRegistration.registration_status}`}>
-                {studentRegistration.registration_status === 'approved' ? '✅ Approved' :
-                 studentRegistration.registration_status === 'pending' ? '⏳ Pending' :
-                 studentRegistration.registration_status === 'rejected' ? '❌ Rejected' :
-                 studentRegistration.registration_status}
-              </span>
-            </div>
-            <div className="info-panel">
-              <h4>Original Deadline</h4>
-              <p>{studentRegistration.original_registration_deadline ? 
-                new Date(studentRegistration.original_registration_deadline).toLocaleDateString() : 'N/A'}</p>
-            </div>
-            <div className="info-panel">
-              <h4>Revised Deadline</h4>
-              <p>{studentRegistration.revised_registration_deadline ? 
-                new Date(studentRegistration.revised_registration_deadline).toLocaleDateString() : 'N/A'}</p>
-            </div>
-            <div className="info-panel">
-              <h4>Extension Length</h4>
-              <p>{studentRegistration.registration_extension_length_days || 0} days</p>
-            </div>
-            <div className="info-panel">
-              <h4>Process Status</h4>
-              <span className={`status-badge ${studentRegistration.pgr_registration_process_completed ? 'active' : 'pending'}`}>
-                {studentRegistration.pgr_registration_process_completed ? 'Completed' : 'In Progress'}
-              </span>
-            </div>
+      
+      {studentData && (
+        <div className="info-rows-container">
+          <div className="info-row">
+            <div className="info-label">Student Number</div>
+            <div className="info-value">{studentData.student_number}</div>
           </div>
-        )}
-      </div>
+          <div className="info-row">
+            <div className="info-label">Full Name</div>
+            <div className="info-value">{studentData.forename} {studentData.surname}</div>
+          </div>
+          <div className="info-row">
+            <div className="info-label">Cohort</div>
+            <div className="info-value">{studentData.cohort}</div>
+          </div>
+          <div className="info-row">
+            <div className="info-label">Course Code</div>
+            <div className="info-value">{studentData.course_code}</div>
+          </div>
+          <div className="info-row">
+            <div className="info-label">Programme of Study</div>
+            <div className="info-value">{studentData.programme_of_study}</div>
+          </div>
+          <div className="info-row">
+            <div className="info-label">Mode</div>
+            <div className="info-value">{studentData.mode}</div>
+          </div>
+          <div className="info-row">
+            <div className="info-label">Subject Area</div>
+            <div className="info-value">{studentData.subject_area}</div>
+          </div>
+          <div className="info-row">
+            <div className="info-label">International Student</div>
+            <div className="info-value">{studentData.international_student ? 'Yes' : 'No'}</div>
+          </div>
+        </div>
+      )}
 
       {/* Supervisors */}
       <div className="dashboard-card">
@@ -825,169 +652,13 @@ const StudentDashboard = () => {
     </div>
   );
 
-  const renderRegistrations = () => (
-    <div className="main-content">
-      {/* Page Header */}
-      <div className="page-header">
-        <h1 className="page-title">My Registrations</h1>
-        <p className="page-subtitle">View your registration history and status updates</p>
-      </div>
-      
-      {/* Search and Filter Section */}
-      <div className="search-filter-section">
-        <div className="form-group">
-          <label className="form-label">Status Filter</label>
-          <select
-            className="form-select"
-            value={registrationFilters.status}
-            onChange={(e) => handleRegistrationFilterChange('status', e.target.value)}
-          >
-            <option value="">All Statuses</option>
-            <option value="approved">Approved</option>
-            <option value="pending">Pending</option>
-            <option value="rejected">Rejected</option>
-          </select>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Results Limit</label>
-          <select
-            className="form-select"
-            value={registrationFilters.limit}
-            onChange={(e) => handleRegistrationFilterChange('limit', parseInt(e.target.value))}
-          >
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-            <option value={200}>200</option>
-          </select>
-        </div>
-        <div className="form-group">
-          <button 
-            className="btn primary"
-            onClick={fetchRegistrations}
-          >
-            Refresh Data
-          </button>
-        </div>
-      </div>
-      
-      {/* Registrations Table */}
-      <div className="dashboard-card">
-        <div className="card-header">
-          <h2 className="card-title">Registration Records</h2>
-        </div>
-        {registrationsLoading ? (
-          <div className="loading-overlay">
-            <div className="loading-spinner"></div>
-            <div className="loading-text">Loading registrations...</div>
-          </div>
-        ) : (
-          <table className="dashboard-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Status</th>
-                <th>Deadlines</th>
-                <th>Extension Info</th>
-                <th>Process</th>
-                <th>Timeline</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.isArray(registrations) && registrations.length > 0 ? (
-                registrations.map((registration) => (
-                  <tr key={registration.registration_id}>
-                    <td><strong>#{registration.registration_id}</strong></td>
-                    <td>
-                      <span className={`status-badge ${registration.registration_status}`}>
-                        {registration.registration_status === 'approved' ? '✅' :
-                         registration.registration_status === 'pending' ? '⏳' :
-                         registration.registration_status === 'rejected' ? '❌' : '❓'}
-                        {' ' + registration.registration_status}
-                      </span>
-                    </td>
-                    <td>
-                      <div>
-                        <strong>Original:</strong> {registration.original_registration_deadline ? 
-                          new Date(registration.original_registration_deadline).toLocaleDateString('en-GB') : 'N/A'}
-                      </div>
-                      <div>
-                        <strong>Revised:</strong> {registration.revised_registration_deadline ? 
-                          new Date(registration.revised_registration_deadline).toLocaleDateString('en-GB') : 'N/A'}
-                      </div>
-                    </td>
-                    <td>
-                      <div>
-                        <strong>Days:</strong> {registration.registration_extension_length_days || 0}
-                      </div>
-                      <div>
-                        <strong>Requested:</strong> {registration.registration_extension_request_date ? 
-                          new Date(registration.registration_extension_request_date).toLocaleDateString('en-GB') : 'N/A'}
-                      </div>
-                    </td>
-                    <td>
-                      <span className={`status-badge ${registration.pgr_registration_process_completed ? 'active' : 'pending'}`}>
-                        {registration.pgr_registration_process_completed ? '✅ Completed' : '⏳ In Progress'}
-                      </span>
-                    </td>
-                    <td>
-                      <div>
-                        <strong>Created:</strong> {new Date(registration.created_date).toLocaleDateString('en-GB')}
-                      </div>
-                      <div>
-                        <strong>Updated:</strong> {new Date(registration.updated_date).toLocaleDateString('en-GB')}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="empty-state">
-                    <div className="empty-state-icon">📋</div>
-                    <div className="empty-state-title">No Registrations Found</div>
-                    <div className="empty-state-description">Your registration data will appear here once available</div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
-      
-      {/* Registration Summary */}
-      {Array.isArray(registrations) && registrations.length > 0 && (
-        <div className="stats-grid">
-          <div className="stats-card">
-            <div className="stats-value">{registrations.length}</div>
-            <div className="stats-label">Total Registrations</div>
-          </div>
-          <div className="stats-card">
-            <div className="stats-value">
-              {registrations.filter(r => r.registration_status === 'approved').length}
-            </div>
-            <div className="stats-label">Approved</div>
-          </div>
-          <div className="stats-card">
-            <div className="stats-value">
-              {registrations.filter(r => r.registration_status === 'pending').length}
-            </div>
-            <div className="stats-label">Pending</div>
-          </div>
-          <div className="stats-card">
-            <div className="stats-value">
-              {registrations.filter(r => r.pgr_registration_process_completed).length}
-            </div>
-            <div className="stats-label">Completed Processes</div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+
 
   const renderProfile = () => (
     <div className="main-content">
       {/* Page Header */}
       <div className="page-header">
-        <h1 className="page-title">Profile Management</h1>
+        <h1 className="page-title">Student Profile</h1>
         <p className="page-subtitle">Manage your account information and security settings</p>
       </div>
 
@@ -1012,35 +683,37 @@ const StudentDashboard = () => {
           </div>
         )}
         
-        <form onSubmit={handleProfileUpdate} className="profile-form">
-          <div className="form-group">
-            <label className="form-label">
-              <span className="label-icon">👤</span>
-              Username
-            </label>
-            <input
-              type="text"
-              value={profileData.username}
-              onChange={(e) => setProfileData({...profileData, username: e.target.value})}
-              className="form-input"
-              placeholder="Enter your username"
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">
-              <span className="label-icon">📧</span>
-              Email Address
-            </label>
-            <input
-              type="email"
-              value={profileData.email}
-              onChange={(e) => setProfileData({...profileData, email: e.target.value})}
-              className="form-input"
-              placeholder="Enter your email address"
-              required
-            />
+        <form onSubmit={handleProfileUpdate} className="profile-form compact-form">
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">
+                <span className="label-icon">👤</span>
+                Username
+              </label>
+              <input
+                type="text"
+                value={profileData.username}
+                onChange={(e) => setProfileData({...profileData, username: e.target.value})}
+                className="form-input"
+                placeholder="Enter username"
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">
+                <span className="label-icon">📧</span>
+                Email Address
+              </label>
+              <input
+                type="email"
+                value={profileData.email}
+                onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                className="form-input"
+                placeholder="Enter email"
+                required
+              />
+            </div>
           </div>
           
           <div className="form-row">
@@ -1054,7 +727,7 @@ const StudentDashboard = () => {
                 value={profileData.first_name}
                 onChange={(e) => setProfileData({...profileData, first_name: e.target.value})}
                 className="form-input"
-                placeholder="Enter your first name"
+                placeholder="First name"
                 required
               />
             </div>
@@ -1069,140 +742,72 @@ const StudentDashboard = () => {
                 value={profileData.last_name}
                 onChange={(e) => setProfileData({...profileData, last_name: e.target.value})}
                 className="form-input"
-                placeholder="Enter your last name"
+                placeholder="Last name"
                 required
               />
             </div>
           </div>
           
-          <div className="form-group">
-            <label className="form-label">
-              <span className="label-icon">🏢</span>
-              Department
-            </label>
-            <input
-              type="text"
-              value={profileData.department}
-              onChange={(e) => setProfileData({...profileData, department: e.target.value})}
-              className="form-input"
-              placeholder="Enter your department"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">
-              <span className="label-icon">📞</span>
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              value={profileData.phone_number}
-              onChange={(e) => setProfileData({...profileData, phone_number: e.target.value})}
-              className="form-input"
-              placeholder="Enter your phone number"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">
-              <span className="label-icon">✅</span>
-              Account Status
-            </label>
-            <div className="checkbox-wrapper">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={profileData.is_active}
-                  onChange={(e) => setProfileData({...profileData, is_active: e.target.checked})}
-                  className="form-checkbox"
-                />
-                <span className="checkbox-text">Active Account</span>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">
+                <span className="label-icon">🏢</span>
+                Department
               </label>
+              <input
+                type="text"
+                value={profileData.department}
+                onChange={(e) => setProfileData({...profileData, department: e.target.value})}
+                className="form-input"
+                placeholder="Department"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">
+                <span className="label-icon">📞</span>
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                value={profileData.phone_number}
+                onChange={(e) => setProfileData({...profileData, phone_number: e.target.value})}
+                className="form-input"
+                placeholder="Phone number"
+              />
             </div>
           </div>
           
-          <div className="form-actions">
-            <button 
-              type="submit" 
-              className="btn btn-primary"
-              disabled={profileLoading}
-            >
-              {profileLoading ? 'Updating...' : 'Update Profile'}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Password Change Card */}
-      <div className="dashboard-card">
-        <div className="card-header">
-          <h2 className="card-title">Change Password</h2>
-          <span className="card-subtitle">Update your account security</span>
-        </div>
-        
-        {passwordError && (
-          <div className="alert alert-error">
-            <div className="alert-icon">⚠️</div>
-            <div className="alert-content">{passwordError}</div>
-          </div>
-        )}
-        
-        <form onSubmit={handlePasswordChange} className="password-form">
-          <div className="form-group">
-            <label className="form-label">
-              <span className="label-icon">🔐</span>
-              Current Password
-            </label>
-            <input
-              type="password"
-              value={passwordData.current_password}
-              onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
-              className="form-input"
-              placeholder="Enter your current password"
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">
-              <span className="label-icon">🔑</span>
-              New Password
-            </label>
-            <input
-              type="password"
-              value={passwordData.new_password}
-              onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
-              className="form-input"
-              placeholder="Enter your new password (minimum 6 characters)"
-              required
-              minLength="6"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">
-              <span className="label-icon">🔑</span>
-              Confirm New Password
-            </label>
-            <input
-              type="password"
-              value={passwordData.confirm_password}
-              onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})}
-              className="form-input"
-              placeholder="Confirm your new password"
-              required
-              minLength="6"
-            />
-          </div>
-          
-          <div className="form-actions">
-            <button 
-              type="submit" 
-              className="btn btn-secondary"
-              disabled={passwordLoading}
-            >
-              {passwordLoading ? 'Changing...' : 'Change Password'}
-            </button>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">
+                <span className="label-icon">✅</span>
+                Account Status
+              </label>
+              <div className="checkbox-wrapper">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={profileData.is_active}
+                    onChange={(e) => setProfileData({...profileData, is_active: e.target.checked})}
+                    className="form-checkbox"
+                  />
+                  <span className="checkbox-text">Active Account</span>
+                </label>
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <div className="form-actions">
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                  disabled={profileLoading}
+                >
+                  {profileLoading ? 'Updating...' : 'Update Profile'}
+                </button>
+              </div>
+            </div>
           </div>
         </form>
       </div>
@@ -1215,34 +820,32 @@ const StudentDashboard = () => {
         key: 'registration',
         title: 'Registration',
         submissionType: 'registration',
-        description: 'Complete initial registration and submit required documents',
-        icon: '📋'
+        description: 'Complete your registration by submitting required documents.',
+        icon: '📝',
+        requiredDocuments: ['Research Proposal', 'Ethics Approval Form']
       },
       {
         key: 'progression',
-        title: 'Progression', 
+        title: 'Progression',
         submissionType: 'annual_report',
-        description: 'Submit annual progress reports and continue research',
+        description: 'Submit annual progress reports and continue research.',
         icon: '📊'
       },
       {
         key: 'final',
         title: 'Final',
         submissionType: 'thesis',
-        description: 'Final dissertation submission and viva examination',
+        description: 'Final dissertation submission and viva.',
         icon: '🎓'
       }
     ];
 
     return (
       <div className="main-content">
-        {/* Page Header */}
         <div className="page-header">
-          <h1 className="page-title">Academic Progress Tracking</h1>
-          <p className="page-subtitle">Track your progression through registration, progression, and final stages</p>
+          <h1 className="page-title">Progress Tracker</h1>
+          <p className="page-subtitle">Track your progress through Registration, Progression, and Final stages.</p>
         </div>
-
-        {/* Progress Timeline Card */}
         <div className="dashboard-card">
           <div className="card-header">
             <h2 className="card-title">Progress Timeline</h2>
@@ -1250,14 +853,15 @@ const StudentDashboard = () => {
           </div>
           <div className="progress-timeline">
             {stages.map((stage, index) => {
-              const status = getStageStatus(stage.key);
-              const isCompleted = status === 'Completed';
+              let status = getStageStatus(stage.key);
+              if (stage.key === 'progression' && getStageStatus('registration') !== 'Approved') status = 'Pending';
+              if (stage.key === 'final' && getStageStatus('progression') !== 'Completed') status = 'Pending';
+              const isCompleted = status === 'Completed' || status === 'Approved';
               const isCurrent = !isCompleted && (
-                stage.key === 'registration' || 
-                (stage.key === 'progression' && getStageStatus('registration') === 'Completed') ||
+                (stage.key === 'registration') ||
+                (stage.key === 'progression' && getStageStatus('registration') === 'Approved') ||
                 (stage.key === 'final' && getStageStatus('progression') === 'Completed')
               );
-              
               return (
                 <div key={stage.key} className={`timeline-item ${isCompleted ? 'completed' : isCurrent ? 'current' : 'pending'}`}>
                   <div className="timeline-marker">
@@ -1266,9 +870,7 @@ const StudentDashboard = () => {
                   </div>
                   <div className="timeline-content">
                     <h3>{stage.title}</h3>
-                    <span className={`status-badge ${status.toLowerCase().replace(' ', '-')}`}>
-                      {status}
-                    </span>
+                    <span className={`status-badge ${status.toLowerCase().replace(' ', '-')}`}>{status}</span>
                   </div>
                   {index < stages.length - 1 && (
                     <div className={`timeline-connector ${isCompleted ? 'completed' : ''}`}></div>
@@ -1278,143 +880,94 @@ const StudentDashboard = () => {
             })}
           </div>
         </div>
-
-        {/* Stage Details Cards */}
         <div className="dashboard-card">
           <div className="card-header">
             <h2 className="card-title">Stage Details</h2>
             <span className="card-subtitle">Detailed information about each academic stage</span>
           </div>
-          <div className="stages-grid">
+          <div className="stages-row">
             {stages.map((stage, index) => {
-              const status = getStageStatus(stage.key);
+              let status = getStageStatus(stage.key);
+              if (stage.key === 'progression' && getStageStatus('registration') !== 'Approved') status = 'Pending';
+              if (stage.key === 'final' && getStageStatus('progression') !== 'Completed') status = 'Pending';
               const stageSubmissions = getStageSubmissions(stage.submissionType);
               const stageVivaTeams = vivaTeams.filter(vt => vt.stage === stage.key);
-              
-              const isAvailable = stage.key === 'registration' || 
-                (stage.key === 'progression' && getStageStatus('registration') === 'Completed') ||
+              const isAvailable =
+                (stage.key === 'registration') ||
+                (stage.key === 'progression' && getStageStatus('registration') === 'Approved') ||
                 (stage.key === 'final' && getStageStatus('progression') === 'Completed');
-              
               return (
-                <div key={stage.key} className={`progress-stage-card ${status.toLowerCase().replace(' ', '-')} ${!isAvailable ? 'locked' : ''}`}>
+                <div key={stage.key} className={`progress-stage-card ${status.toLowerCase().replace(' ', '-')} ${!isAvailable ? 'locked' : ''}`} style={{flex:1, minWidth:'320px', marginRight:index<stages.length-1?'1.5rem':'0'}}>
                   <div className="stage-card-header">
-                    <div className="stage-icon-large">{stage.icon}</div>
                     <div className="stage-title-section">
                       <h3>{stage.title} Stage</h3>
                       <p className="stage-description">{stage.description}</p>
                     </div>
                     <div className="stage-status-badge">
-                      <span className={`status-indicator status-${status.toLowerCase().replace(' ', '-')}`}>
-                        {status === 'In Progress' && '🔄'}
-                        {status === 'Viva Proposed' && '📋'}
-                        {status === 'Viva Approved' && '✅'}
-                        {status === 'Completed' && '🎓'}
-                        {status === 'Pending' && '⏳'}
-                        <span className="status-text">{status}</span>
-                      </span>
+                      <span className={`status-badge ${status.toLowerCase().replace(' ', '-')}`}>{status}</span>
                     </div>
                   </div>
-                  
                   {isAvailable ? (
                     <div className="stage-card-content">
-                      {/* Viva Team Section */}
-                      <div className="stage-info-section">
-                        <div className="section-header-mini">
-                          <h4>🎯 Viva Team</h4>
-                          <span className="section-count">{stageVivaTeams.length}</span>
-                        </div>
-                        {stageVivaTeams.length > 0 ? (
-                          <div className="viva-teams-mini">
-                            {stageVivaTeams.map(vivaTeam => (
-                              <div key={vivaTeam.id} className="viva-team-mini">
-                                <div className="viva-mini-status">
-                                  <span className={`mini-badge viva-status-${vivaTeam.status}`}>
-                                    {vivaTeam.status === 'proposed' && '📋'}
-                                    {vivaTeam.status === 'approved' && '✅'}
-                                    {vivaTeam.status === 'rejected' && '❌'}
-                                    {vivaTeam.status === 'scheduled' && '📅'}
-                                    {vivaTeam.status === 'completed' && '🎓'}
-                                    {vivaTeam.status}
-                                  </span>
-                                </div>
-                                {vivaTeam.scheduled_date && (
-                                  <div className="viva-mini-date">
-                                    📅 {new Date(vivaTeam.scheduled_date).toLocaleDateString('en-GB')}
-                                  </div>
-                                )}
-                                {vivaTeam.outcome && (
-                                  <div className={`viva-mini-outcome outcome-${vivaTeam.outcome}`}>
-                                    {vivaTeam.outcome === 'pass' ? '✅ Passed' : '❌ Failed'}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                      {stage.key === 'registration' && (
+                        <>
+                          <div className="stage-info-section">
+                            <h4>Required Documents</h4>
+                            <ul>
+                              {stage.requiredDocuments.map(doc => (
+                                <li key={doc}>{doc}</li>
+                              ))}
+                            </ul>
                           </div>
-                        ) : (
-                          <div className="empty-state-mini">
-                            <span className="empty-icon">👥</span>
-                            <span className="empty-text">No viva team assigned</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Submissions Section */}
-                      <div className="stage-info-section">
-                        <div className="section-header-mini">
-                          <h4>📄 Documents</h4>
-                          <span className="section-count">{stageSubmissions.length}</span>
-                        </div>
-                        {stageSubmissions.length > 0 ? (
-                          <div className="submissions-mini">
-                            {stageSubmissions.slice(0, 3).map(submission => (
-                              <div key={submission.id} className="submission-mini">
-                                <div className="submission-mini-info">
-                                  <span className="submission-mini-title">{submission.title}</span>
-                                  <span className={`mini-badge submission-status-${submission.status}`}>
-                                    {submission.status === 'draft' && '📝'}
-                                    {submission.status === 'submitted' && '📤'}
-                                    {submission.status === 'under_review' && '🔍'}
-                                    {submission.status === 'approved' && '✅'}
-                                    {submission.status === 'rejected' && '❌'}
-                                    {submission.status === 'revision_required' && '🔄'}
-                                    {submission.status.replace('_', ' ')}
-                                  </span>
-                                </div>
-                                <button 
-                                  className="btn-mini btn-view-mini"
-                                  onClick={() => {
-                                    setSelectedSubmission(submission);
-                                    setShowSubmissionDetailModal(true);
-                                  }}
-                                  title="View Details"
-                                >
-                                  View
-                                </button>
-                              </div>
-                            ))}
-                            {stageSubmissions.length > 3 && (
-                              <div className="submissions-overflow">
-                                +{stageSubmissions.length - 3} more
-                              </div>
+                          <div className="stage-info-section">
+                            <h4>Uploaded Documents</h4>
+                            {stageSubmissions.length > 0 ? (
+                              <ul>
+                                {stageSubmissions.map(submission => (
+                                  <li key={submission.id}>
+                                    <span style={{fontWeight:'600',color:'var(--primary-color)'}}>{submission.title}</span> <span className={`status-badge ${submission.status}`}>{submission.status}</span>
+                                    <button className="btn-stage-action" style={{marginLeft:'1rem'}} onClick={() => {
+                                      setSelectedSubmission(submission);
+                                      setShowSubmissionDetailModal(true);
+                                    }}>View</button>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <div style={{color:'var(--text-muted)',fontSize:'0.9rem'}}>No documents uploaded yet.</div>
                             )}
+                            <div className="stage-actions-section">
+                              <button className="btn-stage-action" onClick={() => handleStageSubmissionCreate(stage.key)}>Upload Document</button>
+                            </div>
                           </div>
-                        ) : (
-                          <div className="empty-state-mini">
-                            <span className="empty-icon">📄</span>
-                            <span className="empty-text">No documents submitted</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Actions */}
-                      <div className="stage-actions-section">
-                        <button 
-                          className="btn-stage-action"
-                          onClick={() => handleStageSubmissionCreate(stage.key)}
-                        >
-                          <span className="action-text">Upload Documents</span>
-                        </button>
-                      </div>
+                        </>
+                      )}
+                      {stage.key === 'progression' && (
+                        <div className="stage-info-section">
+                          <h4>Progression Status</h4>
+                          <div className={`status-badge ${status.toLowerCase().replace(' ', '-')}`}>{status}</div>
+                          {isAvailable ? (
+                            <div className="stage-actions-section">
+                              <button className="btn-stage-action" onClick={() => handleStageSubmissionCreate(stage.key)}>Upload Progress Report</button>
+                            </div>
+                          ) : (
+                            <div style={{color:'var(--text-muted)',fontSize:'0.9rem'}}>Complete Registration to enable Progression.</div>
+                          )}
+                        </div>
+                      )}
+                      {stage.key === 'final' && (
+                        <div className="stage-info-section">
+                          <h4>Final Stage Instructions</h4>
+                          <div style={{marginBottom:'0.5rem'}}>Submit your final dissertation and attend your viva.</div>
+                          {isAvailable ? (
+                            <div className="stage-actions-section">
+                              <button className="btn-stage-action" onClick={() => handleStageSubmissionCreate(stage.key)}>Upload Final Dissertation</button>
+                            </div>
+                          ) : (
+                            <div style={{color:'var(--text-muted)',fontSize:'0.9rem'}}>Complete Progression to enable Final Stage.</div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="stage-locked-content">
@@ -1622,15 +1175,15 @@ const StudentDashboard = () => {
                   <td className="examiners-cell">
                     <div className="examiners-list">
                       <div className="examiner-item">
-                        <span className="examiner-label">Int 1:</span>
+                        <span className="examiner-label">Supervisor 1 ID:</span>
                         <span className="examiner-name">{vivaTeam.internal_examiner_1_id || 'N/A'}</span>
                       </div>
                       <div className="examiner-item">
-                        <span className="examiner-label">Int 2:</span>
+                        <span className="examiner-label">Supervisor 2 ID:</span>
                         <span className="examiner-name">{vivaTeam.internal_examiner_2_id || 'N/A'}</span>
                       </div>
                       <div className="examiner-item">
-                        <span className="examiner-label">Ext:</span>
+                        <span className="examiner-label">External Examiner:</span>
                         <span className="examiner-name">{vivaTeam.external_examiner_name || 'N/A'}</span>
                       </div>
                     </div>
@@ -1694,8 +1247,6 @@ const StudentDashboard = () => {
         return renderProgressTracking();
       case 'submissions':
         return renderSubmissions();
-      case 'registrations':
-        return renderRegistrations();
       case 'viva-teams':
         return renderVivaTeams();
       case 'profile':
@@ -1744,84 +1295,6 @@ const StudentDashboard = () => {
           {renderContent()}
         </div>
       </main>
-
-      {/* Extension Request Modal */}
-      {showExtensionModal && (
-        <div className="modal-overlay show">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3 className="modal-title">Request Registration Extension</h3>
-              <button 
-                className="modal-close" 
-                onClick={() => {
-                  setShowExtensionModal(false);
-                  setExtensionRequest({ extension_days: '', reason: '' });
-                  setExtensionError('');
-                }}
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <div className="modal-body">
-              {extensionError && (
-                <div className="error-message">
-                  {extensionError}
-                </div>
-              )}
-              
-              <div className="form-group">
-                <label className="form-label">Extension Days (1-365):</label>
-                <input
-                  className="form-input"
-                  type="number"
-                  min="1"
-                  max="365"
-                  value={extensionRequest.extension_days}
-                  onChange={(e) => setExtensionRequest({
-                    ...extensionRequest, 
-                    extension_days: e.target.value
-                  })}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Reason for Extension:</label>
-                <textarea
-                  className="form-input"
-                  value={extensionRequest.reason}
-                  onChange={(e) => setExtensionRequest({
-                    ...extensionRequest, 
-                    reason: e.target.value
-                  })}
-                  rows="4"
-                  placeholder="Please provide a detailed reason for your extension request..."
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="modal-footer">
-              <button 
-                onClick={() => {
-                  setShowExtensionModal(false);
-                  setExtensionRequest({ extension_days: '', reason: '' });
-                  setExtensionError('');
-                }}
-                className="btn btn-secondary"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleExtensionRequest}
-                className="btn btn-primary"
-              >
-                Submit Request
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* All Supervisors Modal */}
       {showSupervisorModal && (
@@ -2007,7 +1480,7 @@ const StudentDashboard = () => {
         <div className="modal-overlay show" onClick={() => {
           setShowCreateSubmissionModal(false);
           setSubmissionForm({
-            submission_type: 'registration',
+            submission_type: 'thesis',
             title: '',
             description: ''
           });
@@ -2015,13 +1488,13 @@ const StudentDashboard = () => {
         }}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">Create New Submission</h3>
+              <h3 className="modal-title">Submit</h3>
               <button 
                 className="modal-close" 
                 onClick={() => {
                   setShowCreateSubmissionModal(false);
                   setSubmissionForm({
-                    submission_type: 'registration',
+                    submission_type: 'thesis',
                     title: '',
                     description: ''
                   });
@@ -2087,7 +1560,7 @@ const StudentDashboard = () => {
                 onClick={() => {
                   setShowCreateSubmissionModal(false);
                   setSubmissionForm({
-                    submission_type: 'registration',
+                    submission_type: 'thesis',
                     title: '',
                     description: ''
                   });
@@ -2102,7 +1575,7 @@ const StudentDashboard = () => {
                 className="btn btn-primary"
                 onClick={handleCreateSubmission}
               >
-                Create Submission
+                Submit
               </button>
             </div>
           </div>
@@ -2398,7 +1871,7 @@ const StudentDashboard = () => {
         <div className="modal-overlay show" onClick={() => {
           setShowStageSubmissionModal(false);
           setSubmissionForm({
-            submission_type: 'registration',
+            submission_type: 'thesis',
             title: '',
             description: ''
           });
@@ -2411,7 +1884,7 @@ const StudentDashboard = () => {
                 onClick={() => {
                   setShowStageSubmissionModal(false);
                   setSubmissionForm({
-                    submission_type: 'registration',
+                    submission_type: 'thesis',
                     title: '',
                     description: ''
                   });
