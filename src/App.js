@@ -6,6 +6,7 @@ import PrivateRoute from './components/PrivateRoute';
 import Dashboard from './components/Dashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import GbosAdminDashboard from './pages/GbosAdminDashboard';
+import DosDashboard from './pages/Dos';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Unauthorized from './pages/Unauthorized';
@@ -69,6 +70,15 @@ function App() {
               element={
                 <PrivateRoute requiredRole="gbos_admin">
                   <GbosAdminDashboard />
+                </PrivateRoute>
+              } 
+            />
+            {/* Dos Admin Routes */}
+            <Route 
+              path="/Dos/*" 
+              element={
+                <PrivateRoute requiredRole="dos_admin">
+                  <DosDashboard />
                 </PrivateRoute>
               } 
             />

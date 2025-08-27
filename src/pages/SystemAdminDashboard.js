@@ -2980,6 +2980,7 @@ const UserEditModal = ({ user, onClose, onSave }) => {
                 <option value="student">Student</option>
                 <option value="academic_admin">Academic Admin</option>
                 <option value="gbos_admin">GBOS Admin</option>
+                <option value="dos">DOS</option>
                 <option value="system_admin">System Admin</option>
               </select>
             </div>

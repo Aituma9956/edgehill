@@ -28,7 +28,7 @@ const extractErrorMessage = (error, defaultMessage) => {
   return defaultMessage;
 };
 
-const GbosAdminDashboard = () => {
+const DosDashboard = () => {
   const { user, logout } = useAuth();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -910,7 +910,7 @@ const GbosAdminDashboard = () => {
           <div className="sidebar-logo-section">
             <img src={logo} alt="Logo" className="sidebar-logo" />
             <div className="sidebar-branding">
-              <p className="sidebar-portal-name">Gbos Admin</p>
+              <p className="sidebar-portal-name">Dos Admin</p>
             </div>
           </div>
           <button 
@@ -1065,7 +1065,7 @@ const GbosAdminDashboard = () => {
     <div className="main-content">
       {/* Page Header */}
       <div className="page-header">
-        <h1 className="page-title">GBOS Admin Dashboard</h1>
+        <h1 className="page-title">Director of Studies Dashboard</h1>
         <p className="page-subtitle">Welcome, {user?.username}! Here are your key stats.</p>
       </div>
 
@@ -2462,7 +2462,7 @@ const GbosAdminDashboard = () => {
         {/* Main Header */}
         <div className="main-header">
           <h1 className="header-title">
-            {activeSection === 'dashboard' && 'Gbos Administrator Dashboard'}
+            {activeSection === 'dashboard' && 'Director of Studies Dashboard'}
             {activeSection === 'users' && 'User Management'}
             {activeSection === 'students' && 'Student Management'}
             {activeSection === 'supervisors' && 'Supervisor Management'}
@@ -2820,7 +2820,7 @@ const UserEditModal = ({ user, onClose, onSave }) => {
               >
                 <option value="student">Student</option>
                 <option value="academic_admin">Academic Admin</option>
-                <option value="gbos_admin">GBOS Admin</option>
+                <option value="Dos_admin">Dos Admin</option>
                 <option value="system_admin">System Admin</option>
               </select>
             </div>
@@ -5735,4 +5735,4 @@ const SubmissionRejectModal = ({ submission, onClose, onSave }) => {
   );
 };
 
-export default GbosAdminDashboard;
+export default DosDashboard;
