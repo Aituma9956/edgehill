@@ -38,6 +38,7 @@ const StudentDashboard = () => {
   const [showFileUploadModal, setShowFileUploadModal] = useState(false);
   const [showSubmissionDetailModal, setShowSubmissionDetailModal] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [openActionDropdownId, setOpenActionDropdownId] = useState(null);
   const [submissionForm, setSubmissionForm] = useState({
     submission_type: 'thesis',
     title: '',
@@ -896,87 +897,96 @@ const StudentDashboard = () => {
                 (stage.key === 'registration') ||
                 (stage.key === 'progression' && getStageStatus('registration') === 'Approved') ||
                 (stage.key === 'final' && getStageStatus('progression') === 'Completed');
-              return (
+                return (
                 <div key={stage.key} className={`progress-stage-card ${status.toLowerCase().replace(' ', '-')} ${!isAvailable ? 'locked' : ''}`} style={{flex:1, minWidth:'320px', marginRight:index<stages.length-1?'1.5rem':'0'}}>
                   <div className="stage-card-header">
-                    <div className="stage-title-section">
-                      <h3>{stage.title} Stage</h3>
-                      <p className="stage-description">{stage.description}</p>
-                    </div>
-                    <div className="stage-status-badge">
-                      <span className={`status-badge ${status.toLowerCase().replace(' ', '-')}`}>{status}</span>
-                    </div>
+                  <div className="stage-title-section">
+                    <h3>{stage.title} Stage</h3>
+                    <p className="stage-description">{stage.description}</p>
+                  </div>
+                  <div className="stage-status-badge">
+                    <span className={`status-badge ${status.toLowerCase().replace(' ', '-')}`}>{status}</span>
+                  </div>
                   </div>
                   {isAvailable ? (
-                    <div className="stage-card-content">
-                      {stage.key === 'registration' && (
-                        <>
-                          <div className="stage-info-section">
-                            <h4>Required Documents</h4>
-                            <ul>
-                              {stage.requiredDocuments.map(doc => (
-                                <li key={doc}>{doc}</li>
-                              ))}
-                            </ul>
+                  <div className="stage-card-content">
+                    {stage.key === 'registration' && (
+                    <>
+                      <div className="stage-info-section">
+                      <h4>Required Documents</h4>
+                      <ul>
+                        {stage.requiredDocuments.map(doc => (
+                        <li key={doc}>{doc}</li>
+                        ))}
+                      </ul>
+                      </div>
+                      <div className="stage-info-section">
+                      <h4>Uploaded Documents</h4>
+                      {stageSubmissions.length > 0 ? (
+                        <ul>
+                        {stageSubmissions.map(submission => (
+                          <li key={submission.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                          <div>
+                            <span style={{fontWeight:'600',color:'var(--primary-color)'}}>{submission.title}</span>
+                            <span className={`status-badge ${submission.status}`} style={{marginLeft:'1rem'}}>{submission.status}</span>
                           </div>
-                          <div className="stage-info-section">
-                            <h4>Uploaded Documents</h4>
-                            {stageSubmissions.length > 0 ? (
-                              <ul>
-                                {stageSubmissions.map(submission => (
-                                  <li key={submission.id}>
-                                    <span style={{fontWeight:'600',color:'var(--primary-color)'}}>{submission.title}</span> <span className={`status-badge ${submission.status}`}>{submission.status}</span>
-                                    <button className="btn-stage-action" style={{marginLeft:'1rem'}} onClick={() => {
-                                      setSelectedSubmission(submission);
-                                      setShowSubmissionDetailModal(true);
-                                    }}>View</button>
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <div style={{color:'var(--text-muted)',fontSize:'0.9rem'}}>No documents uploaded yet.</div>
-                            )}
-                            <div className="stage-actions-section">
-                              <button className="btn-stage-action" onClick={() => handleStageSubmissionCreate(stage.key)}>Upload Document</button>
-                            </div>
-                          </div>
-                        </>
+                          <button
+                            className="btn-stage-action"
+                            style={{marginLeft:'auto', minWidth:'90px', textAlign:'center'}}
+                            onClick={() => {
+                            setSelectedSubmission(submission);
+                            setShowSubmissionDetailModal(true);
+                            }}
+                          >
+                            View
+                          </button>
+                          </li>
+                        ))}
+                        </ul>
+                      ) : (
+                        <div style={{color:'var(--text-muted)',fontSize:'0.9rem'}}>No documents uploaded yet.</div>
                       )}
-                      {stage.key === 'progression' && (
-                        <div className="stage-info-section">
-                          <h4>Progression Status</h4>
-                          <div className={`status-badge ${status.toLowerCase().replace(' ', '-')}`}>{status}</div>
-                          {isAvailable ? (
-                            <div className="stage-actions-section">
-                              <button className="btn-stage-action" onClick={() => handleStageSubmissionCreate(stage.key)}>Upload Progress Report</button>
-                            </div>
-                          ) : (
-                            <div style={{color:'var(--text-muted)',fontSize:'0.9rem'}}>Complete Registration to enable Progression.</div>
-                          )}
-                        </div>
-                      )}
-                      {stage.key === 'final' && (
-                        <div className="stage-info-section">
-                          <h4>Final Stage Instructions</h4>
-                          <div style={{marginBottom:'0.5rem'}}>Submit your final dissertation and attend your viva.</div>
-                          {isAvailable ? (
-                            <div className="stage-actions-section">
-                              <button className="btn-stage-action" onClick={() => handleStageSubmissionCreate(stage.key)}>Upload Final Dissertation</button>
-                            </div>
-                          ) : (
-                            <div style={{color:'var(--text-muted)',fontSize:'0.9rem'}}>Complete Progression to enable Final Stage.</div>
-                          )}
-                        </div>
+                      <div className="stage-actions-section" style={{display:'flex',justifyContent:'flex-end'}}>
+                        <button className="btn-stage-action" style={{minWidth:'90px', textAlign:'center'}} onClick={() => handleStageSubmissionCreate(stage.key)}>Upload Document</button>
+                      </div>
+                      </div>
+                    </>
+                    )}
+                    {stage.key === 'progression' && (
+                    <div className="stage-info-section">
+                      <h4>Progression Status</h4>
+                      <div className={`status-badge ${status.toLowerCase().replace(' ', '-')}`}>{status}</div>
+                      {isAvailable ? (
+                      <div className="stage-actions-section" style={{display:'flex',justifyContent:'flex-end'}}>
+                        <button className="btn-stage-action" style={{minWidth:'90px', textAlign:'center'}} onClick={() => handleStageSubmissionCreate(stage.key)}>Upload Progress Report</button>
+                      </div>
+                      ) : (
+                      <div style={{color:'var(--text-muted)',fontSize:'0.9rem'}}>Complete Registration to enable Progression.</div>
                       )}
                     </div>
+                    )}
+                    {stage.key === 'final' && (
+                    <div className="stage-info-section">
+                      <h4>Final Stage Instructions</h4>
+                      <div style={{marginBottom:'0.5rem'}}>Submit your final dissertation and attend your viva.</div>
+                      {isAvailable ? (
+                      <div className="stage-actions-section" style={{display:'flex',justifyContent:'flex-end'}}>
+                        <button className="btn-stage-action" style={{minWidth:'90px', textAlign:'center'}} onClick={() => handleStageSubmissionCreate(stage.key)}>Upload Final Dissertation</button>
+                      </div>
+                      ) : (
+                      <div style={{color:'var(--text-muted)',fontSize:'0.9rem'}}>Complete Progression to enable Final Stage.</div>
+                      )}
+                    </div>
+                    )}
+                  </div>
                   ) : (
-                    <div className="stage-locked-content">
-                      <div className="locked-icon">🔒</div>
-                      <p className="locked-text">Available after completing previous stage</p>
-                    </div>
+                  <div className="stage-locked-content">
+                    <div className="locked-icon">🔒</div>
+                    <p className="locked-text">Available after completing previous stage</p>
+                  </div>
                   )}
                 </div>
-              );
+                );
             })}
           </div>
         </div>
@@ -985,18 +995,24 @@ const StudentDashboard = () => {
   };
 
   const renderSubmissions = () => (
-    <div className="main-content">
-      {/* Page Header */}
-      <div className="page-header">
-        <h1 className="page-title">My Submissions</h1>
-        <p className="page-subtitle">Manage and track your academic document submissions</p>
-        <div className="header-actions">
-          <button 
-            className="btn primary"
-            onClick={() => setShowCreateSubmissionModal(true)}
-          >
-            📝 New Submission
-          </button>
+    <div className="main-content submissions-page">
+      {/* Fixed Header Section */}
+      <div className="fixed-header">
+        <div className="page-header">
+          <h1 className="page-title">My Submissions</h1>
+          <p className="page-subtitle">Manage and track your academic document submissions</p>
+          <div className="header-actions">
+            <button 
+              className="btn primary"
+              onClick={() => setShowCreateSubmissionModal(true)}
+            >
+              📝 New Submission
+            </button>
+          </div>
+        </div>
+        {/* Welcome message, always visible */}
+        <div className="welcome-message">
+          Welcome, {user?.first_name || user?.username}
         </div>
       </div>
 
@@ -1011,116 +1027,133 @@ const StudentDashboard = () => {
         <div className="card-header">
           <h2 className="card-title">Submission Records</h2>
         </div>
-        {submissionsLoading ? (
-          <div className="loading-overlay">
-            <div className="loading-spinner"></div>
-            <div className="loading-text">Loading submissions...</div>
-          </div>
-        ) : (
-          <table className="dashboard-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Details</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Dates</th>
-                <th>File</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {submissions.map((submission) => (
-                <tr key={submission.id}>
-                  <td><strong>#{submission.id}</strong></td>
-                  <td>
-                    <div className="submission-details">
-                      <div className="submission-title">{submission.title}</div>
-                      {submission.description && (
-                        <div className="submission-desc">
-                          {submission.description.length > 60 
-                            ? submission.description.substring(0, 60) + '...'
-                            : submission.description
-                          }
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`status-badge type-${submission.submission_type}`}>
-                      {submission.submission_type === 'registration' ? '📋' :
-                       submission.submission_type === 'viva_document' ? '📄' :
-                       submission.submission_type === 'thesis' ? '📚' :
-                       submission.submission_type === 'correction' ? '✏️' :
-                       submission.submission_type === 'annual_report' ? '📊' : '📄'}
-                      {' ' + submission.submission_type.replace('_', ' ').toUpperCase()}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`status-badge ${submission.status}`}>
-                      {submission.status === 'draft' && '📝'}
-                      {submission.status === 'submitted' && '📤'}
-                      {submission.status === 'under_review' && '🔍'}
-                      {submission.status === 'approved' && '✅'}
-                      {submission.status === 'rejected' && '❌'}
-                      {submission.status === 'revision_required' && '🔄'}
-                      {' ' + submission.status.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td>
-                    <div>
-                      <strong>Created:</strong> {new Date(submission.created_date).toLocaleDateString('en-GB')}
-                    </div>
-                    <div>
-                      <strong>Updated:</strong> {new Date(submission.updated_date).toLocaleDateString('en-GB')}
-                    </div>
-                  </td>
-                  <td>
-                    {submission.file_path ? (
-                      <div className="file-info">
-                        <span className="file-icon">📎</span>
-                        <span className="file-name">{submission.file_path.split('/').pop()}</span>
-                      </div>
-                    ) : (
-                      <span className="no-file">No file</span>
-                    )}
-                  </td>
-                  <td>
-                    <div className="action-buttons">
-                      <button 
-                        className="btn secondary btn-sm"
-                        onClick={() => {
-                          setSelectedSubmission(submission);
-                          setShowSubmissionDetailModal(true);
-                        }}
-                        title="View Details"
-                      >
-                        View
-                      </button>
-                      {submission.status === 'draft' && (
-                        <button 
-                          className="btn primary btn-sm"
-                          onClick={() => handleSubmitForReview(submission.id)}
-                          title="Submit for Review"
-                        >
-                          Submit
-                        </button>
-                      )}
-                    </div>
-                  </td>
+        <div className="table-scroll">
+          {submissionsLoading ? (
+            <div className="loading-overlay">
+              <div className="loading-spinner"></div>
+              <div className="loading-text">Loading submissions...</div>
+            </div>
+          ) : (
+            <table className="dashboard-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Details</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Dates</th>
+                  <th>File</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        
-        {!submissionsLoading && submissions.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-state-icon">📄</div>
-            <div className="empty-state-title">No Submissions Found</div>
-            <div className="empty-state-description">Create your first submission using the "New Submission" button above</div>
-          </div>
-        )}
+              </thead>
+              <tbody>
+                {submissions.map((submission) => (
+                  <tr key={submission.id}>
+                    <td><strong>#{submission.id}</strong></td>
+                    <td>
+                      <div className="submission-details">
+                        <div className="submission-title">{submission.title}</div>
+                        {submission.description && (
+                          <div className="submission-desc">
+                            {submission.description.length > 60 
+                              ? submission.description.substring(0, 60) + '...'
+                              : submission.description
+                            }
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`status-badge type-${submission.submission_type}`}>
+                        {submission.submission_type === 'registration' ? '📋' :
+                         submission.submission_type === 'viva_document' ? '📄' :
+                         submission.submission_type === 'thesis' ? '📚' :
+                         submission.submission_type === 'correction' ? '✏️' :
+                         submission.submission_type === 'annual_report' ? '📊' : '📄'}
+                        {' ' + submission.submission_type.replace('_', ' ').toUpperCase()}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`status-badge ${submission.status}`}>
+                        {submission.status === 'draft' && '📝'}
+                        {submission.status === 'submitted' && '📤'}
+                        {submission.status === 'under_review' && '🔍'}
+                        {submission.status === 'approved' && '✅'}
+                        {submission.status === 'rejected' && '❌'}
+                        {submission.status === 'revision_required' && '🔄'}
+                        {' ' + submission.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td>
+                      <div>
+                        <strong>Created:</strong> {new Date(submission.created_date).toLocaleDateString('en-GB')}
+                      </div>
+                      <div>
+                        <strong>Updated:</strong> {new Date(submission.updated_date).toLocaleDateString('en-GB')}
+                      </div>
+                    </td>
+                    <td>
+                      {submission.file_path ? (
+                        <div className="file-info">
+                          <span className="file-icon">📎</span>
+                          <span className="file-name">{submission.file_path.split('/').pop()}</span>
+                        </div>
+                      ) : (
+                        <span className="no-file">No file</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="action-dropdown-wrapper" style={{ position: 'relative', display: 'inline-block' }}>
+                        <button
+                          className="hamburger-btn"
+                          title="Actions"
+                          onClick={() => setOpenActionDropdownId(openActionDropdownId === submission.id ? null : submission.id)}
+                        >
+                          <span className="hamburger-icon">&#9776;</span>
+                        </button>
+                        {openActionDropdownId === submission.id && (
+                          <div className="action-dropdown-row">
+                            <button
+                              onClick={() => {
+                                setSelectedSubmission(submission);
+                                setShowSubmissionDetailModal(true);
+                                setOpenActionDropdownId(null);
+                              }}
+                              className="dropdown-btn secondary btn-sm"
+                              title="View Details"
+                            >
+                              View
+                            </button>
+                            {submission.status === 'draft' && (
+                              <button
+                                onClick={() => {
+                                  handleSubmitForReview(submission.id);
+                                  setOpenActionDropdownId(null);
+                                }}
+                                className="dropdown-btn primary btn-sm"
+                                title="Submit for Review"
+                              >
+                                Submit
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          
+          {!submissionsLoading && submissions.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-state-icon">📄</div>
+              <div className="empty-state-title">No Submissions Found</div>
+              <div className="empty-state-description">Create your first submission using the "New Submission" button above</div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

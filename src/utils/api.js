@@ -1,5 +1,46 @@
 import axios from 'axios';
 
+// Appraisal API functions
+export const appraisalAPI = {
+  getAllAppraisals: async (skip = 0, limit = 100, status = '', studentNumber = '') => {
+    let url = `/api/v1/appraisals/?skip=${skip}&limit=${limit}`;
+    if (status) url += `&status=${encodeURIComponent(status)}`;
+    if (studentNumber) url += `&student_number=${encodeURIComponent(studentNumber)}`;
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  getAppraisalById: async (appraisalId) => {
+    const response = await api.get(`/api/v1/appraisals/${appraisalId}`);
+    return response.data;
+  },
+
+  getStudentAppraisals: async (studentNumber) => {
+    const response = await api.get(`/api/v1/appraisals/student/${studentNumber}`);
+    return response.data;
+  },
+
+  createAppraisal: async (appraisalData) => {
+    const response = await api.post('/api/v1/appraisals/', appraisalData);
+    return response.data;
+  },
+
+  submitStudentAppraisal: async (appraisalId, submissionData) => {
+    const response = await api.put(`/api/v1/appraisals/${appraisalId}/student-submission`, submissionData);
+    return response.data;
+  },
+
+  submitDosAppraisal: async (appraisalId, dosData) => {
+    const response = await api.put(`/api/v1/appraisals/${appraisalId}/dos-submission`, dosData);
+    return response.data;
+  },
+
+  reviewAppraisal: async (appraisalId, reviewData) => {
+    const response = await api.put(`/api/v1/appraisals/${appraisalId}/review`, reviewData);
+    return response.data;
+  }
+};
+
 // Base API URL
 const BASE_URL = 'https://edgebackend-hzf7ahdnf9bzbecm.uksouth-01.azurewebsites.net';
 

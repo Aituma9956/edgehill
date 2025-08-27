@@ -2,8 +2,10 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
+
 import Dashboard from './components/Dashboard';
 import StudentDashboard from './pages/StudentDashboard';
+import GbosAdminDashboard from './pages/GbosAdminDashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Unauthorized from './pages/Unauthorized';
@@ -57,6 +59,16 @@ function App() {
               element={
                 <PrivateRoute requiredRole="student">
                   <StudentDashboard />
+                </PrivateRoute>
+              } 
+            />
+
+            {/* GBOS Admin Routes */}
+            <Route 
+              path="/gbos/*" 
+              element={
+                <PrivateRoute requiredRole="gbos_admin">
+                  <GbosAdminDashboard />
                 </PrivateRoute>
               } 
             />

@@ -35,6 +35,8 @@ const AcademicAdminDashboard = () => {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   
   // Student management state
+  // Dropdown for student actions
+  const [openDropdown, setOpenDropdown] = useState(null);
   const [students, setStudents] = useState([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [studentsError, setStudentsError] = useState('');
@@ -762,7 +764,8 @@ const AcademicAdminDashboard = () => {
             <div className="loading-text">Loading students...</div>
           </div>
         ) : (
-          <table className="dashboard-table">
+          <div className="table-scroll">
+            <table className="dashboard-table">
             <thead>
               <tr>
                 <th>Student Number</th>
@@ -805,40 +808,57 @@ const AcademicAdminDashboard = () => {
                     </div>
                   </td>
                   <td>
-                    <div className="action-buttons">
+                    <div className="action-dropdown-wrapper">
                       <button
-                        className="btn secondary btn-sm"
-                        onClick={() => {
-                          setSelectedStudent(student);
-                          setShowStudentDetailModal(true);
-                        }}
-                        title="View Details"
+                        className="hamburger-btn"
+                        onClick={() => setOpenDropdown(openDropdown === student.student_number ? null : student.student_number)}
+                        title="Actions"
                       >
-                        View
+                        <span className="hamburger-icon">&#9776;</span>
                       </button>
-                      <button
-                        className="btn primary btn-sm"
-                        onClick={() => {
-                          setSelectedStudent(student);
-                          setShowStudentModal(true);
-                        }}
-                        title="Edit Student"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="btn danger btn-sm"
-                        onClick={() => handleDeleteStudent(student.student_number)}
-                        title="Delete Student"
-                      >
-                        Delete
-                      </button>
+                      {openDropdown === student.student_number && (
+                        <div className="action-dropdown-row">
+                          <button
+                            onClick={() => {
+                              setSelectedStudent(student);
+                              setShowStudentDetailModal(true);
+                              setOpenDropdown(null);
+                            }}
+                            className="dropdown-btn secondary btn-sm"
+                            title="View Details"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedStudent(student);
+                              setShowStudentModal(true);
+                              setOpenDropdown(null);
+                            }}
+                            className="dropdown-btn primary btn-sm"
+                            title="Edit Student"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleDeleteStudent(student.student_number);
+                              setOpenDropdown(null);
+                            }}
+                            className="dropdown-btn danger btn-sm"
+                            title="Delete Student"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         )}
 
         {students.length === 0 && !studentsLoading && (
@@ -1108,44 +1128,49 @@ const AcademicAdminDashboard = () => {
                     <div className="notes-info">{assignment.supervision_notes || 'No notes'}</div>
                   </td>
                   <td>
-                    <div className="action-buttons">
-                      <button 
-                        onClick={() => {
-                          setSelectedAssignment(assignment);
-                          setShowAssignmentDetailModal(true);
-                        }}
-                        className="btn secondary btn-sm"
-                        title="View Details"
-                      >
-                        View
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedAssignment(assignment);
-                          setShowAssignmentModal(true);
-                        }}
-                        className="btn primary btn-sm"
-                        title="Edit Assignment"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={async () => {
-                          if (window.confirm('Are you sure you want to remove this assignment?')) {
-                            try {
-                              await assignmentAPI.removeAssignment(assignment.student_supervisor_id);
-                              fetchAssignments();
-                            } catch (error) {
-                              setAssignmentsError(`Failed to remove assignment: ${extractErrorMessage(error, 'Failed to remove assignment')}`);
-                            }
-                          }
-                        }}
-                        className="btn danger btn-sm"
-                        title="Remove Assignment"
-                      >
-                        Remove
-                      </button>
-                    </div>
+                      <div className="action-dropdown-wrapper">
+                        <button
+                          className="hamburger-btn"
+                          onClick={() => setOpenDropdown(openDropdown === assignment.student_supervisor_id ? null : assignment.student_supervisor_id)}
+                          title="Actions"
+                        >
+                          <span className="hamburger-icon">☰</span>
+                        </button>
+                        {openDropdown === assignment.student_supervisor_id && (
+                          <div className="action-dropdown-row">
+                            <button
+                              className="dropdown-btn"
+                              onClick={() => {
+                                setSelectedAssignment(assignment);
+                                setShowAssignmentDetailModal(true);
+                                setOpenDropdown(null);
+                              }}
+                            >View</button>
+                            <button
+                              className="dropdown-btn"
+                              onClick={() => {
+                                setSelectedAssignment(assignment);
+                                setShowAssignmentModal(true);
+                                setOpenDropdown(null);
+                              }}
+                            >Edit</button>
+                            <button
+                              className="dropdown-btn"
+                              onClick={async () => {
+                                if (window.confirm('Are you sure you want to remove this assignment?')) {
+                                  try {
+                                    await assignmentAPI.removeAssignment(assignment.student_supervisor_id);
+                                    fetchAssignments();
+                                  } catch (error) {
+                                    setAssignmentsError(`Failed to remove assignment: ${extractErrorMessage(error, 'Failed to remove assignment')}`);
+                                  }
+                                }
+                                setOpenDropdown(null);
+                              }}
+                            >Remove</button>
+                          </div>
+                        )}
+                      </div>
                   </td>
                 </tr>
               ))}
@@ -1335,47 +1360,52 @@ const AcademicAdminDashboard = () => {
                     </span>
                   </td>
                   <td>
-                    <div className="action-buttons">
-                      <button 
-                        onClick={() => {
-                          setSelectedRegistration(registration);
-                          setShowRegistrationDetailModal(true);
-                        }}
-                        className="btn secondary btn-sm"
-                        title="View Details"
-                      >
-                        View
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedRegistration(registration);
-                          setShowRegistrationModal(true);
-                        }}
-                        className="btn primary btn-sm"
-                        title="Edit Registration"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedRegistration(registration);
-                          setShowExtensionModal(true);
-                        }}
-                        className="btn warning btn-sm"
-                        title="Manage Extension"
-                      >
-                        Extension
-                      </button>
-                      {registration.registration_status === 'extension_requested' && (
-                        <button 
-                          onClick={() => handleApproveExtension(registration.registration_id)}
-                          className="btn success btn-sm"
-                          title="Approve the extension request"
+                      <div className="action-dropdown-wrapper">
+                        <button
+                          className="hamburger-btn"
+                          onClick={() => setOpenDropdown(openDropdown === registration.registration_id ? null : registration.registration_id)}
+                          title="Actions"
                         >
-                          Approve
+                          <span className="hamburger-icon">☰</span>
                         </button>
-                      )}
-                    </div>
+                        {openDropdown === registration.registration_id && (
+                          <div className="action-dropdown-row">
+                            <button
+                              className="dropdown-btn"
+                              onClick={() => {
+                                setSelectedRegistration(registration);
+                                setShowRegistrationDetailModal(true);
+                                setOpenDropdown(null);
+                              }}
+                            >View</button>
+                            <button
+                              className="dropdown-btn"
+                              onClick={() => {
+                                setSelectedRegistration(registration);
+                                setShowRegistrationModal(true);
+                                setOpenDropdown(null);
+                              }}
+                            >Edit</button>
+                            <button
+                              className="dropdown-btn"
+                              onClick={() => {
+                                setSelectedRegistration(registration);
+                                setShowExtensionModal(true);
+                                setOpenDropdown(null);
+                              }}
+                            >Extension</button>
+                            {registration.registration_status === 'extension_requested' && (
+                              <button
+                                className="dropdown-btn"
+                                onClick={() => {
+                                  handleApproveExtension(registration.registration_id);
+                                  setOpenDropdown(null);
+                                }}
+                              >Approve</button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                   </td>
                 </tr>
               ))}

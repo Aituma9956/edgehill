@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import SystemAdminDashboard from '../pages/SystemAdminDashboard';
 import AcademicAdminDashboard from '../pages/AcademicAdminDashboard';
+import GbosAdminDashboard from '../pages/GbosAdminDashboard';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -22,7 +23,7 @@ const Dashboard = () => {
       case 'academic_admin':
         return <AcademicAdminDashboard />;
       case 'gbos_admin':
-        return <div>GBOS Admin Dashboard - Coming Soon</div>;
+        return <GbosAdminDashboard />;
       case 'gbos_approver':
         return <div>GBOS Approver Dashboard - Coming Soon</div>;
       case 'dos':

@@ -33,11 +33,12 @@ const SystemAdminDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  
   // User management state
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState('');
+  // Dropdown for user and student actions
+  const [openDropdown, setOpenDropdown] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -1118,7 +1119,8 @@ const SystemAdminDashboard = () => {
             <div className="loading-text">Loading users...</div>
           </div>
         ) : (
-          <table className="dashboard-table">
+          <div className="table-scroll">
+            <table className="dashboard-table">
             <thead>
               <tr>
                 <th>ID</th>
@@ -1154,43 +1156,58 @@ const SystemAdminDashboard = () => {
                     </span>
                   </td>
                   <td>
-                    <div className="action-buttons">
-                      <button 
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setShowUserDetailModal(true);
-                        }}
-                        className="btn secondary btn-sm"
-                        title="View Details"
+                    <div className="action-dropdown-wrapper">
+                      <button
+                        className="hamburger-btn"
+                        onClick={() => setOpenDropdown(openDropdown === user.id ? null : user.id)}
+                        title="Actions"
                       >
-                        View
+                        <span className="hamburger-icon">&#9776;</span>
                       </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setShowUserModal(true);
-                        }}
-                        className="btn primary btn-sm"
-                        title="Edit User"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setShowPasswordModal(true);
-                        }}
-                        className="btn warning btn-sm"
-                        title="Reset Password"
-                      >
-                        Reset Password
-                      </button>
+                      {openDropdown === user.id && (
+                        <div className="action-dropdown-row">
+                          <button
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowUserDetailModal(true);
+                              setOpenDropdown(null);
+                            }}
+                            className="dropdown-btn secondary btn-sm"
+                            title="View Details"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowUserModal(true);
+                              setOpenDropdown(null);
+                            }}
+                            className="dropdown-btn primary btn-sm"
+                            title="Edit User"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowPasswordModal(true);
+                              setOpenDropdown(null);
+                            }}
+                            className="dropdown-btn warning btn-sm"
+                            title="Reset Password"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         )}
 
         {!usersLoading && users.length === 0 && (
@@ -1323,32 +1340,50 @@ const SystemAdminDashboard = () => {
                     <span className="status-badge active">✅ Active</span>
                   </td>
                   <td>
-                    <div className="action-buttons">
-                      <button 
-                        onClick={() => handleViewStudent(student.student_number)}
-                        disabled={studentDetailLoading}
-                        className="btn secondary btn-sm"
-                        title="View Details"
+                    <div className="action-dropdown-wrapper">
+                      <button
+                        className="hamburger-btn"
+                        onClick={() => setOpenDropdown(openDropdown === student.student_number ? null : student.student_number)}
+                        title="Actions"
                       >
-                        {studentDetailLoading ? 'Loading...' : 'View'}
+                        <span className="hamburger-icon">&#9776;</span>
                       </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedStudent(student);
-                          setShowStudentModal(true);
-                        }}
-                        className="btn primary btn-sm"
-                        title="Edit Student"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteStudent(student.student_number)}
-                        className="btn danger btn-sm"
-                        title="Delete Student"
-                      >
-                        Delete
-                      </button>
+                      {openDropdown === student.student_number && (
+                        <div className="action-dropdown-row">
+                          <button
+                            onClick={() => {
+                              handleViewStudent(student.student_number);
+                              setOpenDropdown(null);
+                            }}
+                            disabled={studentDetailLoading}
+                            className="dropdown-btn secondary btn-sm"
+                            title="View Details"
+                          >
+                            {studentDetailLoading ? 'Loading...' : 'View'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedStudent(student);
+                              setShowStudentModal(true);
+                              setOpenDropdown(null);
+                            }}
+                            className="dropdown-btn primary btn-sm"
+                            title="Edit Student"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleDeleteStudent(student.student_number);
+                              setOpenDropdown(null);
+                            }}
+                            className="dropdown-btn danger btn-sm"
+                            title="Delete Student"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1504,43 +1539,57 @@ const SystemAdminDashboard = () => {
                     <div className="date-info">{new Date(supervisor.created_date).toLocaleDateString()}</div>
                   </td>
                   <td>
-                    <div className="action-buttons">
-                      <button 
-                        onClick={() => {
-                          setSelectedSupervisor(supervisor);
-                          setShowSupervisorDetailModal(true);
-                        }}
-                        className="btn secondary btn-sm"
-                        title="View Details"
+                    <div className="action-dropdown-wrapper">
+                      <button
+                        className="hamburger-btn"
+                        onClick={() => setOpenDropdown(openDropdown === supervisor.supervisor_id ? null : supervisor.supervisor_id)}
+                        title="Actions"
                       >
-                        View
+                        <span className="hamburger-icon">&#9776;</span>
                       </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedSupervisor(supervisor);
-                          setShowSupervisorModal(true);
-                        }}
-                        className="btn primary btn-sm"
-                        title="Edit Supervisor"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={async () => {
-                          if (window.confirm('Are you sure you want to delete this supervisor?')) {
-                            try {
-                              await supervisorAPI.deleteSupervisor(supervisor.supervisor_id);
-                              fetchSupervisors();
-                            } catch (error) {
-                              setSupervisorsError(`Failed to delete supervisor: ${extractErrorMessage(error, 'Failed to delete supervisor')}`);
-                            }
-                          }
-                        }}
-                        className="btn danger btn-sm"
-                        title="Delete Supervisor"
-                      >
-                        Delete
-                      </button>
+                      {openDropdown === supervisor.supervisor_id && (
+                        <div className="action-dropdown-row">
+                          <button
+                            onClick={() => {
+                              setSelectedSupervisor(supervisor);
+                              setShowSupervisorDetailModal(true);
+                              setOpenDropdown(null);
+                            }}
+                            className="dropdown-btn secondary btn-sm"
+                            title="View Details"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedSupervisor(supervisor);
+                              setShowSupervisorModal(true);
+                              setOpenDropdown(null);
+                            }}
+                            className="dropdown-btn primary btn-sm"
+                            title="Edit Supervisor"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (window.confirm('Are you sure you want to delete this supervisor?')) {
+                                try {
+                                  await supervisorAPI.deleteSupervisor(supervisor.supervisor_id);
+                                  fetchSupervisors();
+                                } catch (error) {
+                                  setSupervisorsError(`Failed to delete supervisor: ${extractErrorMessage(error, 'Failed to delete supervisor')}`);
+                                }
+                              }
+                              setOpenDropdown(null);
+                            }}
+                            className="dropdown-btn danger btn-sm"
+                            title="Delete Supervisor"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1635,33 +1684,46 @@ const SystemAdminDashboard = () => {
                     <div className="notes-info">{assignment.supervision_notes || 'No notes'}</div>
                   </td>
                   <td>
-                    <div className="action-buttons">
-                      <button 
-                        onClick={() => {
-                          setSelectedAssignment(assignment);
-                          setShowAssignmentModal(true);
-                        }}
-                        className="btn primary btn-sm"
-                        title="Edit Assignment"
+                    <div className="action-dropdown-wrapper">
+                      <button
+                        className="hamburger-btn"
+                        onClick={() => setOpenDropdown(openDropdown === assignment.student_supervisor_id ? null : assignment.student_supervisor_id)}
+                        title="Actions"
                       >
-                        Edit
+                        <span className="hamburger-icon">&#9776;</span>
                       </button>
-                      <button 
-                        onClick={async () => {
-                          if (window.confirm('Are you sure you want to remove this assignment?')) {
-                            try {
-                              await assignmentAPI.removeAssignment(assignment.student_supervisor_id);
-                              fetchAssignments();
-                            } catch (error) {
-                              setAssignmentsError(`Failed to remove assignment: ${extractErrorMessage(error, 'Failed to remove assignment')}`);
-                            }
-                          }
-                        }}
-                        className="btn danger btn-sm"
-                        title="Remove Assignment"
-                      >
-                        Remove
-                      </button>
+                      {openDropdown === assignment.student_supervisor_id && (
+                        <div className="action-dropdown-row">
+                          <button
+                            onClick={() => {
+                              setSelectedAssignment(assignment);
+                              setShowAssignmentModal(true);
+                              setOpenDropdown(null);
+                            }}
+                            className="dropdown-btn primary btn-sm"
+                            title="Edit Assignment"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (window.confirm('Are you sure you want to remove this assignment?')) {
+                                try {
+                                  await assignmentAPI.removeAssignment(assignment.student_supervisor_id);
+                                  fetchAssignments();
+                                } catch (error) {
+                                  setAssignmentsError(`Failed to remove assignment: ${extractErrorMessage(error, 'Failed to remove assignment')}`);
+                                }
+                              }
+                              setOpenDropdown(null);
+                            }}
+                            className="dropdown-btn danger btn-sm"
+                            title="Remove Assignment"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1825,47 +1887,64 @@ const SystemAdminDashboard = () => {
                   </td>
                   <td>{new Date(registration.created_date).toLocaleDateString()}</td>
                   <td>
-                    <div className="action-buttons">
-                      <button 
-                        onClick={() => {
-                          setSelectedRegistration(registration);
-                          setShowRegistrationDetailModal(true);
-                        }}
-                        className="btn secondary btn-sm"
-                        title="View Details"
-                      >
-                        View
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedRegistration(registration);
-                          setShowRegistrationModal(true);
-                        }}
-                        className="btn primary btn-sm"
-                        title="Edit Registration"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedRegistration(registration);
-                          setShowExtensionModal(true);
-                        }}
-                        className="btn warning btn-sm"
-                        title="Request Extension"
-                      >
-                        Extension
-                      </button>
-                      {registration.registration_status === 'extension_requested' && (
-                        <button 
-                          onClick={() => handleApproveExtension(registration.registration_id)}
-                          className="btn primary btn-sm"
-                          title="Approve the extension request"
+                      <div className="action-dropdown-wrapper">
+                        <button
+                          className="hamburger-btn"
+                          onClick={() => setOpenDropdown(openDropdown === registration.registration_id ? null : registration.registration_id)}
+                          title="Actions"
                         >
-                          ✓ Approve Extension
+                          <span className="hamburger-icon">&#9776;</span>
                         </button>
-                      )}
-                    </div>
+                        {openDropdown === registration.registration_id && (
+                          <div className="action-dropdown-row">
+                            <button
+                              onClick={() => {
+                                setSelectedRegistration(registration);
+                                setShowRegistrationDetailModal(true);
+                                setOpenDropdown(null);
+                              }}
+                              className="dropdown-btn secondary btn-sm"
+                              title="View Details"
+                            >
+                              View
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedRegistration(registration);
+                                setShowRegistrationModal(true);
+                                setOpenDropdown(null);
+                              }}
+                              className="dropdown-btn primary btn-sm"
+                              title="Edit Registration"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedRegistration(registration);
+                                setShowExtensionModal(true);
+                                setOpenDropdown(null);
+                              }}
+                              className="dropdown-btn warning btn-sm"
+                              title="Request Extension"
+                            >
+                              Extension
+                            </button>
+                            {registration.registration_status === 'extension_requested' && (
+                              <button
+                                onClick={() => {
+                                  handleApproveExtension(registration.registration_id);
+                                  setOpenDropdown(null);
+                                }}
+                                className="dropdown-btn primary btn-sm"
+                                title="Approve the extension request"
+                              >
+                                ✓ Approve Extension
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                   </td>
                 </tr>
               ))}
@@ -2035,73 +2114,92 @@ const SystemAdminDashboard = () => {
                     ) : 'Pending'}
                   </td>
                   <td>
-                    <div className="action-buttons">
-                      <button 
-                        onClick={() => {
-                          setSelectedVivaTeam(vivaTeam);
-                          setShowVivaTeamDetailModal(true);
-                        }}
-                        className="btn secondary btn-sm"
-                        title="View Details"
+                    <div className="action-dropdown-wrapper">
+                      <button
+                        className="hamburger-btn"
+                        onClick={() => setOpenDropdown(openDropdown === vivaTeam.id ? null : vivaTeam.id)}
+                        title="Actions"
                       >
-                        View
+                        <span className="hamburger-icon">&#9776;</span>
                       </button>
-                      {vivaTeam.status === 'proposed' && (
-                        <>
-                          <button 
-                            onClick={() => handleApproveVivaTeam(vivaTeam.id)}
-                            className="btn primary btn-sm"
-                            title="Approve Team"
-                          >
-                            Approve
-                          </button>
-                          <button 
+                      {openDropdown === vivaTeam.id && (
+                        <div className="action-dropdown-row">
+                          <button
                             onClick={() => {
                               setSelectedVivaTeam(vivaTeam);
-                              setShowRejectModal(true);
+                              setShowVivaTeamDetailModal(true);
+                              setOpenDropdown(null);
                             }}
-                            className="btn danger btn-sm"
-                            title="Reject Team"
+                            className="dropdown-btn secondary btn-sm"
+                            title="View Details"
                           >
-                            Reject
+                            View
                           </button>
-                        </>
-                      )}
-                      {vivaTeam.status === 'approved' && (
-                        <button 
-                          onClick={() => {
-                            setSelectedVivaTeam(vivaTeam);
-                            setShowScheduleModal(true);
-                          }}
-                          className="btn primary btn-sm"
-                          title="Schedule Viva"
-                        >
-                          Schedule
-                        </button>
-                      )}
-                      {vivaTeam.status === 'scheduled' && !vivaTeam.outcome && (
-                        <button 
-                          onClick={() => {
-                            setSelectedVivaTeam(vivaTeam);
-                            setShowOutcomeModal(true);
-                          }}
-                          className="btn warning btn-sm"
-                          title="Submit Outcome"
-                        >
-                          Submit Outcome
-                        </button>
-                      )}
-                      {vivaTeam.status !== 'completed' && (
-                        <button 
-                          onClick={() => {
-                            setSelectedVivaTeam(vivaTeam);
-                            setShowVivaTeamModal(true);
-                          }}
-                          className="btn warning btn-sm"
-                          title="Edit Team"
-                        >
-                          Edit
-                        </button>
+                          {vivaTeam.status === 'proposed' && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  handleApproveVivaTeam(vivaTeam.id);
+                                  setOpenDropdown(null);
+                                }}
+                                className="dropdown-btn primary btn-sm"
+                                title="Approve Team"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedVivaTeam(vivaTeam);
+                                  setShowRejectModal(true);
+                                  setOpenDropdown(null);
+                                }}
+                                className="dropdown-btn danger btn-sm"
+                                title="Reject Team"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                          {vivaTeam.status === 'approved' && (
+                            <button
+                              onClick={() => {
+                                setSelectedVivaTeam(vivaTeam);
+                                setShowScheduleModal(true);
+                                setOpenDropdown(null);
+                              }}
+                              className="dropdown-btn primary btn-sm"
+                              title="Schedule Viva"
+                            >
+                              Schedule
+                            </button>
+                          )}
+                          {vivaTeam.status === 'scheduled' && !vivaTeam.outcome && (
+                            <button
+                              onClick={() => {
+                                setSelectedVivaTeam(vivaTeam);
+                                setShowOutcomeModal(true);
+                                setOpenDropdown(null);
+                              }}
+                              className="dropdown-btn warning btn-sm"
+                              title="Submit Outcome"
+                            >
+                              Submit Outcome
+                            </button>
+                          )}
+                          {vivaTeam.status !== 'completed' && (
+                            <button
+                              onClick={() => {
+                                setSelectedVivaTeam(vivaTeam);
+                                setShowVivaTeamModal(true);
+                                setOpenDropdown(null);
+                              }}
+                              className="dropdown-btn warning btn-sm"
+                              title="Edit Team"
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </td>
@@ -2281,58 +2379,74 @@ const SystemAdminDashboard = () => {
                     </div>
                   </td>
                   <td>
-                    <div className="action-buttons">
-                      <button 
-                        onClick={async () => {
-                          try {
-                            await fetchSubmissionById(submission.id);
-                            setShowSubmissionDetailModal(true);
-                          } catch (error) {
-                            console.error('Error loading submission details:', error);
-                            // Fallback to current submission data
-                            setSelectedSubmission(submission);
-                            setShowSubmissionDetailModal(true);
-                          }
-                        }}
-                        className="btn secondary btn-sm"
-                        title="View Details"
-                      >
-                        View
-                      </button>
-                      {submission.status === 'submitted' && (
-                        <button 
-                          onClick={() => {
-                            setSelectedSubmission(submission);
-                            setShowSubmissionReviewModal(true);
-                          }}
-                          className="btn primary btn-sm"
-                          title="Review Submission"
+                      <div className="action-dropdown-wrapper">
+                        <button
+                          className="hamburger-btn"
+                          onClick={() => setOpenDropdown(openDropdown === submission.id ? null : submission.id)}
+                          title="Actions"
                         >
-                          Review
+                          <span className="hamburger-icon">&#9776;</span>
                         </button>
-                      )}
-                      {submission.status === 'under_review' && (
-                        <>
-                          <button 
-                            onClick={() => handleApproveSubmission(submission.id)}
-                            className="btn primary btn-sm"
-                            title="Approve Submission"
-                          >
-                            ✓ Approve
-                          </button>
-                          <button 
-                            onClick={() => {
-                              setSelectedSubmission(submission);
-                              setShowSubmissionRejectModal(true);
-                            }}
-                            className="btn danger btn-sm"
-                            title="Reject Submission"
-                          >
-                            ✗ Reject
-                          </button>
-                        </>
-                      )}
-                    </div>
+                        {openDropdown === submission.id && (
+                          <div className="action-dropdown-row">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await fetchSubmissionById(submission.id);
+                                  setShowSubmissionDetailModal(true);
+                                } catch (error) {
+                                  console.error('Error loading submission details:', error);
+                                  setSelectedSubmission(submission);
+                                  setShowSubmissionDetailModal(true);
+                                }
+                                setOpenDropdown(null);
+                              }}
+                              className="dropdown-btn secondary btn-sm"
+                              title="View Details"
+                            >
+                              View
+                            </button>
+                            {submission.status === 'submitted' && (
+                              <button
+                                onClick={() => {
+                                  setSelectedSubmission(submission);
+                                  setShowSubmissionReviewModal(true);
+                                  setOpenDropdown(null);
+                                }}
+                                className="dropdown-btn primary btn-sm"
+                                title="Review Submission"
+                              >
+                                Review
+                              </button>
+                            )}
+                            {submission.status === 'under_review' && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    handleApproveSubmission(submission.id);
+                                    setOpenDropdown(null);
+                                  }}
+                                  className="dropdown-btn primary btn-sm"
+                                  title="Approve Submission"
+                                >
+                                  ✓ Approve
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedSubmission(submission);
+                                    setShowSubmissionRejectModal(true);
+                                    setOpenDropdown(null);
+                                  }}
+                                  className="dropdown-btn danger btn-sm"
+                                  title="Reject Submission"
+                                >
+                                  ✗ Reject
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
                   </td>
                 </tr>
               ))}
