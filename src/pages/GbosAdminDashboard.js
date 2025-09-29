@@ -1766,9 +1766,6 @@ const GbosAdminDashboard = () => {
                 <th>Registration ID</th>
                 <th>Student Number</th>
                 <th>Status</th>
-                <th>Original Deadline</th>
-                <th>Revised Deadline</th>
-                <th>Extension Days</th>
                 <th>Process Completed</th>
                 <th>Created Date</th>
                 <th>Actions</th>
@@ -1789,9 +1786,6 @@ const GbosAdminDashboard = () => {
                       }
                     </span>
                   </td>
-                  <td>{new Date(registration.original_registration_deadline).toLocaleDateString()}</td>
-                  <td>{registration.revised_registration_deadline ? new Date(registration.revised_registration_deadline).toLocaleDateString() : '-'}</td>
-                  <td>{registration.registration_extension_length_days || 0}</td>
                   <td>
                     <span className={`status-badge ${registration.pgr_registration_process_completed ? 'completed' : 'pending'}`}>
                       {registration.pgr_registration_process_completed ? '✅ Yes' : '⏳ No'}
@@ -1952,13 +1946,10 @@ const GbosAdminDashboard = () => {
               <tr>
                 <th>Team ID</th>
                 <th>Student Number</th>
-                <th>Stage</th>
-                <th>Status</th>
+                <th>Stage & Status</th>
                 <th>Examiners</th>
-                <th>Proposed Date</th>
-                <th>Scheduled Date</th>
-                <th>Location</th>
-                <th>Outcome</th>
+                <th>Dates</th>
+                <th>Location & Outcome</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1968,19 +1959,23 @@ const GbosAdminDashboard = () => {
                   <td><strong>#{vivaTeam.id}</strong></td>
                   <td>{vivaTeam.student_number}</td>
                   <td>
-                    <span className={`status-badge stage-${vivaTeam.stage}`}>
-                      {vivaTeam.stage.charAt(0).toUpperCase() + vivaTeam.stage.slice(1)}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`status-badge ${vivaTeam.status}`}>
-                      {vivaTeam.status === 'proposed' ? '📋 Proposed' :
-                       vivaTeam.status === 'approved' ? '✅ Approved' :
-                       vivaTeam.status === 'rejected' ? '❌ Rejected' :
-                       vivaTeam.status === 'scheduled' ? '📅 Scheduled' :
-                       vivaTeam.status === 'completed' ? '🎓 Completed' :
-                       vivaTeam.status}
-                    </span>
+                    <div className="stage-status-info">
+                      <div className="stage-info">
+                        <span className={`status-badge stage-${vivaTeam.stage}`}>
+                          {vivaTeam.stage.charAt(0).toUpperCase() + vivaTeam.stage.slice(1)}
+                        </span>
+                      </div>
+                      <div className="status-info">
+                        <span className={`status-badge ${vivaTeam.status}`}>
+                          {vivaTeam.status === 'proposed' ? '📋 Proposed' :
+                           vivaTeam.status === 'approved' ? '✅ Approved' :
+                           vivaTeam.status === 'rejected' ? '❌ Rejected' :
+                           vivaTeam.status === 'scheduled' ? '📅 Scheduled' :
+                           vivaTeam.status === 'completed' ? '🎓 Completed' :
+                           vivaTeam.status}
+                        </span>
+                      </div>
+                    </div>
                   </td>
                   <td className="examiners-cell">
                     <div className="examiners-list">
@@ -1998,15 +1993,31 @@ const GbosAdminDashboard = () => {
                       </div>
                     </div>
                   </td>
-                  <td>{vivaTeam.proposed_date ? new Date(vivaTeam.proposed_date).toLocaleDateString() : 'N/A'}</td>
-                  <td>{vivaTeam.scheduled_date ? new Date(vivaTeam.scheduled_date).toLocaleDateString() : 'Not Scheduled'}</td>
-                  <td>{vivaTeam.location || 'TBD'}</td>
                   <td>
-                    {vivaTeam.outcome ? (
-                      <span className={`status-badge outcome-${vivaTeam.outcome.toLowerCase()}`}>
-                        {vivaTeam.outcome}
-                      </span>
-                    ) : 'Pending'}
+                    <div className="dates-info">
+                      <div className="proposed-date">
+                        <strong>Proposed:</strong> {vivaTeam.proposed_date ? new Date(vivaTeam.proposed_date).toLocaleDateString() : 'N/A'}
+                      </div>
+                      <div className="scheduled-date">
+                        <strong>Scheduled:</strong> {vivaTeam.scheduled_date ? new Date(vivaTeam.scheduled_date).toLocaleDateString() : 'Not Scheduled'}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="location-outcome-info">
+                      <div className="location-info">
+                        <strong>Location:</strong> {vivaTeam.location || 'TBD'}
+                      </div>
+                      <div className="outcome-info">
+                        <strong>Outcome:</strong> {
+                          vivaTeam.outcome ? (
+                            <span className={`status-badge outcome-${vivaTeam.outcome.toLowerCase()}`}>
+                              {vivaTeam.outcome}
+                            </span>
+                          ) : 'Pending'
+                        }
+                      </div>
+                    </div>
                   </td>
                   <td>
                       <div className="action-dropdown-wrapper">
@@ -2218,8 +2229,7 @@ const GbosAdminDashboard = () => {
                 <th>Title</th>
                 <th>Type</th>
                 <th>Status</th>
-                <th>Submitted Date</th>
-                <th>Deadline</th>
+                <th>Dates</th>
                 <th>Documents</th>
                 <th>Actions</th>
               </tr>
@@ -2249,13 +2259,17 @@ const GbosAdminDashboard = () => {
                     </span>
                   </td>
                   <td>
-                    {submission.submission_date ? new Date(submission.submission_date).toLocaleDateString() : 'N/A'}
-                  </td>
-                  <td>
-                    {submission.review_deadline ? new Date(submission.review_deadline).toLocaleDateString() : 'N/A'}
-                    {submission.review_deadline && new Date(submission.review_deadline) < new Date() && (
-                      <span className="deadline-warning"> (⚠️ Overdue)</span>
-                    )}
+                    <div className="dates-info">
+                      <div className="submitted-date">
+                        <strong>Submitted:</strong> {submission.submission_date ? new Date(submission.submission_date).toLocaleDateString() : 'N/A'}
+                      </div>
+                      <div className="deadline-date">
+                        <strong>Deadline:</strong> {submission.review_deadline ? new Date(submission.review_deadline).toLocaleDateString() : 'N/A'}
+                        {submission.review_deadline && new Date(submission.review_deadline) < new Date() && (
+                          <span className="deadline-warning"> (⚠️ Overdue)</span>
+                        )}
+                      </div>
+                    </div>
                   </td>
                   <td>
                     <div className="document-count">

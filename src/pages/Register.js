@@ -11,7 +11,8 @@ const Register = () => {
     confirmPassword: '',
     first_name: '',
     last_name: '',
-    department: ''
+    department: '',
+    role: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -36,6 +37,16 @@ const Register = () => {
     'History',
     'Geography',
     'Other'
+  ];
+
+  const roles = [
+    { value: 'student', label: 'Student' },
+    { value: 'supervisor', label: 'Supervisor' },
+    { value: 'academic_admin', label: 'Academic Admin' },
+    { value: 'system_admin', label: 'System Admin' },
+    { value: 'gbos_admin', label: 'GBOS Admin' },
+    { value: 'dos', label: 'Director of Studies' },
+    { value: 'gbos_approval', label: 'GBOS Approval' }
   ];
 
   const handleChange = (e) => {
@@ -90,6 +101,10 @@ const Register = () => {
 
     if (!formData.department) {
       newErrors.department = 'Department is required';
+    }
+
+    if (!formData.role) {
+      newErrors.role = 'Role is required';
     }
 
     setErrors(newErrors);
@@ -254,26 +269,50 @@ const Register = () => {
               )}
             </div>
 
-            <div className="form-group">
-              <label htmlFor="department" className="form-label">
-                Department
-              </label>
-              <select
-                id="department"
-                name="department"
-                value={formData.department}
-                onChange={handleChange}
-                className={`form-input ${errors.department ? 'error' : ''}`}
-                disabled={loading}
-              >
-                <option value="">Select your department</option>
-                {departments.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
-                ))}
-              </select>
-              {errors.department && (
-                <span className="error-text">{errors.department}</span>
-              )}
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="department" className="form-label">
+                  Department
+                </label>
+                <select
+                  id="department"
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                  className={`form-input ${errors.department ? 'error' : ''}`}
+                  disabled={loading}
+                >
+                  <option value="">Select your department</option>
+                  {departments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+                {errors.department && (
+                  <span className="error-text">{errors.department}</span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="role" className="form-label">
+                  Role
+                </label>
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className={`form-input ${errors.role ? 'error' : ''}`}
+                  disabled={loading}
+                >
+                  <option value="">Select your role</option>
+                  {roles.map(role => (
+                    <option key={role.value} value={role.value}>{role.label}</option>
+                  ))}
+                </select>
+                {errors.role && (
+                  <span className="error-text">{errors.role}</span>
+                )}
+              </div>
             </div>
 
             <div className="form-row">

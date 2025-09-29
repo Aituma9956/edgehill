@@ -2,16 +2,17 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
-
+import SupervisorDashboard from './pages/SupervisorDashboard';
 import Dashboard from './components/Dashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import GbosAdminDashboard from './pages/GbosAdminDashboard';
 import DosDashboard from './pages/Dos';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Unauthorized from './pages/Unauthorized';
 import './styles/globals.css';
 import './styles/shared-dashboard.css';
+import GbosApprover from './pages/GbosApprover';  
+
 
 function App() {
   return (
@@ -22,7 +23,6 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
             
             {/* Protected Routes */}
             <Route 
@@ -38,7 +38,7 @@ function App() {
             <Route 
               path="/admin/*" 
               element={
-                <PrivateRoute requiredRole="system_admin">
+                <PrivateRoute>
                   <Dashboard />
                 </PrivateRoute>
               } 
@@ -48,7 +48,7 @@ function App() {
             <Route 
               path="/academic/*" 
               element={
-                <PrivateRoute requiredRole="academic_admin">
+                <PrivateRoute>
                   <Dashboard />
                 </PrivateRoute>
               } 
@@ -58,7 +58,7 @@ function App() {
             <Route 
               path="/student/*" 
               element={
-                <PrivateRoute requiredRole="student">
+                <PrivateRoute>
                   <StudentDashboard />
                 </PrivateRoute>
               } 
@@ -68,7 +68,7 @@ function App() {
             <Route 
               path="/gbos/*" 
               element={
-                <PrivateRoute requiredRole="gbos_admin">
+                <PrivateRoute>
                   <GbosAdminDashboard />
                 </PrivateRoute>
               } 
@@ -77,12 +77,32 @@ function App() {
             <Route 
               path="/Dos/*" 
               element={
-                <PrivateRoute requiredRole="dos_admin">
+                <PrivateRoute>
                   <DosDashboard />
                 </PrivateRoute>
               } 
             />
             
+            {/* Supervisor Routes */}
+            <Route 
+              path="/supervisor/*"
+              element={
+                <PrivateRoute>
+                  <SupervisorDashboard />
+                </PrivateRoute>
+              } 
+            />
+
+            {/* GBOS Approver Routes */}
+            <Route 
+              path="/gbos-approver/*"
+              element={
+                <PrivateRoute>
+                  <GbosApprover />
+                </PrivateRoute>
+              } 
+            />
+
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

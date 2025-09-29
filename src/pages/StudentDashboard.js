@@ -1177,12 +1177,10 @@ const StudentDashboard = () => {
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Stage</th>
-                <th>Status</th>
+                <th>Stage & Status</th>
                 <th>Examiners</th>
                 <th>Dates</th>
-                <th>Location</th>
-                <th>Outcome</th>
+                <th>Location & Outcome</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -1191,19 +1189,23 @@ const StudentDashboard = () => {
                 <tr key={vivaTeam.id}>
                   <td className="team-id"><strong>#{vivaTeam.id}</strong></td>
                   <td>
-                    <span className={`status-badge stage-${vivaTeam.stage}`}>
-                      {vivaTeam.stage.charAt(0).toUpperCase() + vivaTeam.stage.slice(1)}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`status-badge viva-status-${vivaTeam.status}`}>
-                      {vivaTeam.status === 'proposed' ? '📋' :
-                       vivaTeam.status === 'approved' ? '✅' :
-                       vivaTeam.status === 'rejected' ? '❌' :
-                       vivaTeam.status === 'scheduled' ? '📅' :
-                       vivaTeam.status === 'completed' ? '🎓' : '⏳'}
-                      <span className="status-text">{vivaTeam.status}</span>
-                    </span>
+                    <div className="stage-status-info">
+                      <div className="stage-info">
+                        <span className={`status-badge stage-${vivaTeam.stage}`}>
+                          {vivaTeam.stage.charAt(0).toUpperCase() + vivaTeam.stage.slice(1)}
+                        </span>
+                      </div>
+                      <div className="status-info">
+                        <span className={`status-badge viva-status-${vivaTeam.status}`}>
+                          {vivaTeam.status === 'proposed' ? '📋' :
+                           vivaTeam.status === 'approved' ? '✅' :
+                           vivaTeam.status === 'rejected' ? '❌' :
+                           vivaTeam.status === 'scheduled' ? '📅' :
+                           vivaTeam.status === 'completed' ? '🎓' : '⏳'}
+                          <span className="status-text">{vivaTeam.status}</span>
+                        </span>
+                      </div>
+                    </div>
                   </td>
                   <td className="examiners-cell">
                     <div className="examiners-list">
@@ -1237,13 +1239,18 @@ const StudentDashboard = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="location-cell">
-                    <span className="location-text">{vivaTeam.location || 'TBD'}</span>
-                  </td>
-                  <td className="outcome-cell">
-                    <span className={`outcome-badge ${vivaTeam.outcome ? 'has-outcome' : 'pending-outcome'}`}>
-                      {vivaTeam.outcome || 'Pending'}
-                    </span>
+                  <td className="location-outcome-cell">
+                    <div className="location-outcome-info">
+                      <div className="location-info">
+                        <strong>Location:</strong> <span className="location-text">{vivaTeam.location || 'TBD'}</span>
+                      </div>
+                      <div className="outcome-info">
+                        <strong>Outcome:</strong> 
+                        <span className={`outcome-badge ${vivaTeam.outcome ? 'has-outcome' : 'pending-outcome'}`}>
+                          {vivaTeam.outcome || 'Pending'}
+                        </span>
+                      </div>
+                    </div>
                   </td>
                   <td className="actions-cell">
                     <button 

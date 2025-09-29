@@ -2,9 +2,12 @@ import React, { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import SystemAdminDashboard from '../pages/SystemAdminDashboard';
+import SupervisorDashboard from '../pages/SupervisorDashboard';
 import AcademicAdminDashboard from '../pages/AcademicAdminDashboard';
 import GbosAdminDashboard from '../pages/GbosAdminDashboard';
 import DosDashboard from '../pages/Dos';
+import GbosApprover from '../pages/GbosApprover';
+
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -25,6 +28,10 @@ const Dashboard = () => {
         return <AcademicAdminDashboard />;
       case 'gbos_admin':
         return <GbosAdminDashboard />;
+        case 'gbos_approver':
+          return <GbosApprover />;
+        case 'supervisor':
+          return <SupervisorDashboard />;
       case 'gbos_approver':
         return <div>GBOS Approver Dashboard - Coming Soon</div>;
       case 'dos':

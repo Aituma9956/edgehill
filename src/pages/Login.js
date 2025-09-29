@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/auth.css';
@@ -11,11 +11,35 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/dashboard';
+
+  const getRoleBasedRedirect = (userRole) => {
+    switch (userRole) {
+      case 'student':
+        return '/student/dashboard';
+      case 'supervisor':
+        return '/supervisor/dashboard';
+      case 'system_admin':
+      case 'academic_admin':
+      case 'gbos_admin':
+      case 'dos':
+        return '/dashboard';
+      default:
+        return '/dashboard';
+    }
+  };
+
+  useEffect(() => {
+    // Redirect if user is already logged in
+    if (user) {
+      const redirectPath = getRoleBasedRedirect(user.role);
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -58,7 +82,10 @@ const Login = () => {
       const result = await login(formData);
       
       if (result.success) {
-        navigate(from, { replace: true });
+        // Get user data from localStorage after successful login
+        const userData = JSON.parse(localStorage.getItem('user'));
+        const redirectPath = getRoleBasedRedirect(userData?.role);
+        navigate(redirectPath, { replace: true });
       } else {
         setErrors({ general: result.error });
       }
