@@ -42,8 +42,8 @@ export const appraisalAPI = {
 };
 
 // Base API URL
- const BASE_URL = 'https://edgebackend-hzf7ahdnf9bzbecm.uksouth-01.azurewebsites.net';
-// const BASE_URL = 'https://pgr-backend-c5enhsgthggxf8h6.uksouth-01.azurewebsites.net';
+//  const BASE_URL = 'https://edgebackend-hzf7ahdnf9bzbecm.uksouth-01.azurewebsites.net';
+const BASE_URL = 'https://pgr-backend-c5enhsgthggxf8h6.uksouth-01.azurewebsites.net';
 
 // Create axios instance
 const api = axios.create({

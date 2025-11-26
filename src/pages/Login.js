@@ -110,11 +110,11 @@ const Login = () => {
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
           borderRadius: 12,
           background: '#fff',
-          padding: '24px 18px',
+          padding: '24px 20px',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
-          minHeight: '80vh',
+          justifyContent: 'center',
+          minHeight: 'auto',
         }}>
           <div style={{ marginBottom: 12 }}>
             <div className="auth-logo" style={{ textAlign: 'center', marginBottom: 0 }}>
