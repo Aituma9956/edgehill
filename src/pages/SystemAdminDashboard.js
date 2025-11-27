@@ -2998,6 +2998,7 @@ const UserEditModal = ({ user, onClose, onSave }) => {
                 <option value="gbos_approver">GBOS Approver</option>
                 <option value="dos">DOS</option>
                 <option value="system_admin">System Admin</option>
+                <option value="supervisor">Supervisor</option>
              
               </select>
             </div>
