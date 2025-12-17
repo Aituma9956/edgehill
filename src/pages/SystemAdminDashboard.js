@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { adminAPI, authAPI, studentAPI, supervisorAPI, assignmentAPI, registrationAPI, vivaTeamAPI, submissionAPI } from '../utils/api';
+import { adminAPI, authAPI, studentAPI, supervisorAPI, assignmentAPI, registrationAPI, vivaTeamAPI, submissionAPI, vivaAPI } from '../utils/api';
 import '../styles/shared-dashboard.css';
 import logo from '../image/logo.png';
 
@@ -126,6 +126,26 @@ const SystemAdminDashboard = () => {
   const [submissionTypeFilter, setSubmissionTypeFilter] = useState('');
   const [submissionStatusFilter, setSubmissionStatusFilter] = useState('');
   
+  // Viva management state
+  const [vivas, setVivas] = useState([]);
+  const [vivasLoading, setVivasLoading] = useState(false);
+  const [vivasError, setVivasError] = useState('');
+  const [selectedViva, setSelectedViva] = useState(null);
+  const [showVivaModal, setShowVivaModal] = useState(false);
+  const [showCreateVivaModal, setShowCreateVivaModal] = useState(false);
+  const [showVivaDetailModal, setShowVivaDetailModal] = useState(false);
+  const [showVivaOutcomeModal, setShowVivaOutcomeModal] = useState(false);
+  const [vivaSearchTerm, setVivaSearchTerm] = useState('');
+  const [vivaStageFilter, setVivaStageFilter] = useState('');
+  const [vivaOutcomes, setVivaOutcomes] = useState([]);
+  const [showCreateOutcomeModal, setShowCreateOutcomeModal] = useState(false);
+  const [showEditOutcomeModal, setShowEditOutcomeModal] = useState(false);
+  const [selectedOutcome, setSelectedOutcome] = useState(null);
+  const [studentVivaTeams, setStudentVivaTeams] = useState([]);
+  const [showStudentVivaTeamsModal, setShowStudentVivaTeamsModal] = useState(false);
+  const [studentSubmissions, setStudentSubmissions] = useState([]);
+  const [showStudentSubmissionsModal, setShowStudentSubmissionsModal] = useState(false);
+  
   // Profile management state
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -148,9 +168,10 @@ const SystemAdminDashboard = () => {
     { id: 'students', label: 'Student Management', icon: '🎓', iconClass: 'fas fa-user-graduate' },
     { id: 'supervisors', label: 'Supervisor Management', icon: '👨‍🏫', iconClass: 'fas fa-chalkboard-teacher' },
     { id: 'assignments', label: 'Assignments', icon: '📋', iconClass: 'fas fa-clipboard-list' },
-    { id: 'registrations', label: 'Registrations', icon: '📝', iconClass: 'fas fa-file-alt' },
+    // { id: 'registrations', label: 'Registrations', icon: '📝', iconClass: 'fas fa-file-alt' },
     { id: 'submissions', label: 'Submissions', icon: '📄', iconClass: 'fas fa-file-upload' },
     { id: 'viva-teams', label: 'Viva Teams', icon: '🎯', iconClass: 'fas fa-bullseye' },
+    { id: 'viva', label: 'Viva', icon: '🎓', iconClass: 'fas fa-graduation-cap' },
     { id: 'profile', label: 'Profile', icon: '⚙️', iconClass: 'fas fa-cog' }
   ];
 
@@ -167,6 +188,8 @@ const SystemAdminDashboard = () => {
       fetchRegistrations();
     } else if (activeSection === 'viva-teams') {
       fetchVivaTeams();
+    } else if (activeSection === 'viva') {
+      fetchVivas();
     } else if (activeSection === 'submissions') {
       fetchSubmissions();
     } else if (activeSection === 'dashboard') {
@@ -294,6 +317,22 @@ const SystemAdminDashboard = () => {
       setSubmissionsError(`Failed to fetch submissions: ${extractErrorMessage(error, 'Failed to fetch submissions')}`);
     } finally {
       setSubmissionsLoading(false);
+    }
+  };
+
+  const fetchVivas = async () => {
+    try {
+      setVivasLoading(true);
+      setVivasError('');
+      
+      const data = await vivaAPI.getAllVivas(0, 100, vivaSearchTerm, vivaStageFilter);
+      setVivas(data);
+    } catch (error) {
+      console.error('Error fetching vivas:', error);
+      const errorMessage = extractErrorMessage(error, 'Failed to fetch vivas');
+      setVivasError(`Failed to fetch vivas: ${errorMessage}`);
+    } finally {
+      setVivasLoading(false);
     }
   };
 
@@ -868,6 +907,15 @@ const SystemAdminDashboard = () => {
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                     <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
                     <path d="M19.4 15C19.2669 15.3016 19.2272 15.6362 19.286 15.9606C19.3448 16.285 19.4995 16.5843 19.73 16.82L19.79 16.88C19.976 17.0657 20.1235 17.2863 20.2241 17.5291C20.3248 17.7719 20.3766 18.0322 20.3766 18.295C20.3766 18.5578 20.3248 18.8181 20.2241 19.0609C20.1235 19.3037 19.976 19.5243 19.79 19.71C19.6043 19.896 19.3837 20.0435 19.1409 20.1441C18.8981 20.2448 18.6378 20.2966 18.375 20.2966C18.1122 20.2966 17.8519 20.2448 17.6091 20.1441C17.3663 20.0435 17.1457 19.896 16.96 19.71L16.9 19.65C16.6643 19.4195 16.365 19.2648 16.0406 19.206C15.7162 19.1472 15.3816 19.1869 15.08 19.32C14.7842 19.4468 14.532 19.6572 14.3543 19.9255C14.1766 20.1938 14.0813 20.5082 14.08 20.83V21C14.08 21.5304 13.8693 22.0391 13.4942 22.4142C13.1191 22.7893 12.6104 23 12.08 23C11.5496 23 11.0409 22.7893 10.6658 22.4142C10.2907 22.0391 10.08 21.5304 10.08 21V20.91C10.0723 20.579 9.96512 20.258 9.77251 19.9887C9.5799 19.7194 9.31074 19.5143 9 19.4C8.69838 19.2669 8.36381 19.2272 8.03941 19.286C7.71502 19.3448 7.41568 19.4995 7.18 19.73L7.12 19.79C6.93425 19.976 6.71368 20.1235 6.47088 20.2241C6.22808 20.3248 5.96783 20.3766 5.705 20.3766C5.44217 20.3766 5.18192 20.3248 4.93912 20.2241C4.69632 20.1235 4.47575 19.976 4.29 19.79C4.10405 19.6043 3.95653 19.3837 3.85588 19.1409C3.75523 18.8981 3.70343 18.6378 3.70343 18.375C3.70343 18.1122 3.75523 17.8519 3.85588 17.6091C3.95653 17.3663 4.10405 17.1457 4.29 16.96L4.35 16.9C4.58054 16.6643 4.73519 16.365 4.794 16.0406C4.85282 15.7162 4.81312 15.3816 4.68 15.08C4.55324 14.7842 4.34276 14.532 4.07447 14.3543C3.80618 14.1766 3.49179 14.0813 3.17 14.08H3C2.46957 14.08 1.96086 13.8693 1.58579 13.4942C1.21071 13.1191 1 12.6104 1 12.08C1 11.5496 1.21071 11.0409 1.58579 10.6658C1.96086 10.2907 2.46957 10.08 3 10.08H3.09C3.42099 10.0723 3.742 9.96512 4.0113 9.77251C4.28059 9.5799 4.48572 9.31074 4.6 9C4.73312 8.69838 4.77282 8.36381 4.714 8.03941C4.65519 7.71502 4.50054 7.41568 4.27 7.18L4.21 7.12C4.02405 6.93425 3.87653 6.71368 3.77588 6.47088C3.67523 6.22808 3.62343 5.96783 3.62343 5.705C3.62343 5.44217 3.67523 5.18192 3.77588 4.93912C3.87653 4.69632 4.02405 4.47575 4.21 4.29C4.39575 4.10405 4.61632 3.95653 4.85912 3.85588C5.10192 3.75523 5.36217 3.70343 5.625 3.70343C5.88783 3.70343 6.14808 3.75523 6.39088 3.85588C6.63368 3.95653 6.85425 4.10405 7.04 4.29L7.1 4.35C7.33568 4.58054 7.63502 4.73519 7.95941 4.794C8.28381 4.85282 8.61838 4.81312 8.92 4.68H9C9.29577 4.55324 9.54802 4.34276 9.72569 4.07447C9.90337 3.80618 9.99872 3.49179 10 3.17V3C10 2.46957 10.2107 1.96086 10.5858 1.58579C10.9609 1.21071 11.4696 1 12 1C12.5304 1 13.0391 1.21071 13.4142 1.58579C13.7893 1.96086 14 2.46957 14 3V3.09C14.0013 3.41179 14.0966 3.72618 14.2743 3.99447C14.452 4.26276 14.7042 4.47324 15 4.6C15.3016 4.73312 15.6362 4.77282 15.9606 4.714C16.285 4.65519 16.5843 4.50054 16.82 4.27L16.88 4.21C17.0657 4.02405 17.2863 3.87653 17.5291 3.77588C17.7719 3.67523 18.0322 3.62343 18.295 3.62343C18.5578 3.62343 18.8181 3.67523 19.0609 3.77588C19.3037 3.87653 19.5243 4.02405 19.71 4.21C19.896 4.39575 20.0435 4.61632 20.1441 4.85912C20.2448 5.10192 20.2966 5.36217 20.2966 5.625C20.2966 5.88783 20.2448 6.14808 20.1441 6.39088C20.0435 6.63368 19.896 6.85425 19.71 7.04L19.65 7.1C19.4195 7.33568 19.2648 7.63502 19.206 7.95941C19.1472 8.28381 19.1869 8.61838 19.32 8.92V9C19.4468 9.29577 19.6572 9.54802 19.9255 9.72569C20.1938 9.90337 20.5082 9.99872 20.83 10H21C21.5304 10 22.0391 10.2107 22.4142 10.5858C22.7893 10.9609 23 11.4696 23 12C23 12.5304 22.7893 13.0391 22.4142 13.4142C22.0391 13.7893 21.5304 14 21 14H20.91C20.5882 14.0013 20.2738 14.0966 20.0055 14.2743C19.7372 14.452 19.5268 14.7042 19.4 15Z" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                )}
+                {item.id === 'viva' && (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M22 10V15C22 16.1046 21.1046 17 20 17H4C2.89543 17 2 16.1046 2 15V10" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M7 17L7 21" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M17 17L17 21" stroke="currentColor" strokeWidth="2"/>
+                    <path d="M22 5L12 13L2 5L12 2L22 5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+                    <circle cx="12" cy="9" r="1.5" fill="currentColor"/>
                   </svg>
                 )}
                 {item.id === 'profile' && (
@@ -2548,6 +2596,337 @@ const SystemAdminDashboard = () => {
     </div>
   );
 
+  // Render Viva Management Section
+  const renderVivaManagement = () => (
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Viva Management</h1>
+        <p className="page-subtitle">Manage vivas, schedules, and outcomes for students</p>
+      </div>
+
+      {/* Search Section */}
+      <div className="search-filter-section">
+        <div className="form-group">
+          <label className="form-label">Search by Student Number</label>
+          <input
+            type="text"
+            placeholder="Enter student number..."
+            value={vivaSearchTerm}
+            onChange={(e) => setVivaSearchTerm(e.target.value)}
+            className="form-input"
+          />
+        </div>
+        <div className="form-group button-shift">
+          <button 
+            onClick={fetchVivas} 
+            className="btn secondary"
+          >
+            🔍 Search
+          </button>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Filter by Stage</label>
+          <select
+            value={vivaStageFilter}
+            onChange={(e) => setVivaStageFilter(e.target.value)}
+            className="form-input"
+          >
+            <option value="">All Stages</option>
+            <option value="registration">Registration</option>
+            <option value="progression">Progression</option>
+            <option value="final">Final</option>
+          </select>
+        </div>
+      </div>
+
+      {vivasError && (
+        <div className="alert alert-error">
+          <div className="alert-icon">⚠️</div>
+          <div className="alert-content">{vivasError}</div>
+        </div>
+      )}
+
+      {/* Vivas Table */}
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Vivas</h2>
+          <span className="card-subtitle">{Array.isArray(vivas) ? vivas.length : 0} vivas found</span>
+          <button 
+            className="btn primary"
+            onClick={() => setShowCreateVivaModal(true)}
+          >
+            ➕ Create Viva
+          </button>
+        </div>
+        {vivasLoading ? (
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Loading vivas...</div>
+          </div>
+        ) : (
+          <div className="table-scroll">
+            <table className="dashboard-table">
+              <thead>
+                <tr>
+                  <th>Viva ID</th>
+                  <th>Student Number</th>
+                  <th>Stage & Type</th>
+                  <th>Date & Time</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.isArray(vivas) && vivas.length > 0 ? vivas.map(viva => (
+                  <tr key={viva.viva_id}>
+                    <td><strong>#{viva.viva_id}</strong></td>
+                    <td>{viva.student_number}</td>
+                    <td>
+                      <div className="stage-type-info">
+                        <span className={`status-badge stage-${viva.stage}`}>
+                          {viva.stage.charAt(0).toUpperCase() + viva.stage.slice(1)}
+                        </span>
+                        <span className={`status-badge viva-type-${viva.viva_type}`}>
+                          {viva.viva_type.charAt(0).toUpperCase() + viva.viva_type.slice(1)}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="datetime-info">
+                        <div className="date-info">
+                          <strong>📅</strong> {viva.date_of_viva ? new Date(viva.date_of_viva).toLocaleDateString() : 'Not set'}
+                        </div>
+                        <div className="time-info">
+                          <strong>🕐</strong> {viva.time_of_viva || 'Not set'}
+                        </div>
+                      </div>
+                    </td>
+                    <td>{viva.location_of_viva || 'TBD'}</td>
+                    <td>
+                      <div className="status-info-group">
+                        {viva.confirmation_viva_has_taken_place ? (
+                          <span className="status-badge confirmed">✅ Confirmed</span>
+                        ) : (
+                          <span className="status-badge pending">⏳ Pending</span>
+                        )}
+                        {viva.organisation_process_completed && (
+                          <span className="status-badge organized">📋 Organized</span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => {
+                          setSelectedViva(viva);
+                          setShowVivaDetailModal(true);
+                        }}
+                        className="btn btn-sm secondary"
+                        title="View Details"
+                      >
+                        👁️ View
+                      </button>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>
+                      No vivas found. Click "Create Viva" to add one.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Create Viva Modal */}
+      {showCreateVivaModal && (
+        <CreateVivaModal
+          onClose={() => setShowCreateVivaModal(false)}
+          onSave={async (vivaData) => {
+            try {
+              await vivaAPI.createViva(vivaData);
+              setShowCreateVivaModal(false);
+              fetchVivas();
+            } catch (error) {
+              alert('Failed to create viva: ' + extractErrorMessage(error, 'Unknown error'));
+            }
+          }}
+        />
+      )}
+
+      {/* Edit Viva Modal */}
+      {showVivaModal && selectedViva && (
+        <EditVivaModal
+          viva={selectedViva}
+          onClose={() => {
+            setShowVivaModal(false);
+            setSelectedViva(null);
+          }}
+          onSave={async (vivaData) => {
+            try {
+              await vivaAPI.updateViva(selectedViva.viva_id, vivaData);
+              setShowVivaModal(false);
+              setSelectedViva(null);
+              fetchVivas();
+            } catch (error) {
+              alert('Failed to update viva: ' + extractErrorMessage(error, 'Unknown error'));
+            }
+          }}
+        />
+      )}
+
+      {/* Viva Detail Modal */}
+      {showVivaDetailModal && selectedViva && (
+        <VivaDetailModal
+          viva={selectedViva}
+          onClose={() => {
+            setShowVivaDetailModal(false);
+            setSelectedViva(null);
+          }}
+          onEdit={() => {
+            setShowVivaDetailModal(false);
+            setShowVivaModal(true);
+          }}
+          onConfirm={async () => {
+            try {
+              await vivaAPI.confirmViva(selectedViva.viva_id);
+              fetchVivas();
+              setShowVivaDetailModal(false);
+              setSelectedViva(null);
+            } catch (error) {
+              alert('Failed to confirm viva: ' + extractErrorMessage(error, 'Unknown error'));
+            }
+          }}
+          onCompleteOrganization={async () => {
+            try {
+              await vivaAPI.completeVivaOrganization(selectedViva.viva_id);
+              fetchVivas();
+              setShowVivaDetailModal(false);
+              setSelectedViva(null);
+            } catch (error) {
+              alert('Failed to complete organization: ' + extractErrorMessage(error, 'Unknown error'));
+            }
+          }}
+          onViewOutcomes={async () => {
+            try {
+              const outcomes = await vivaAPI.getVivaOutcomes(selectedViva.viva_id);
+              setVivaOutcomes(outcomes);
+              setShowVivaOutcomeModal(true);
+            } catch (error) {
+              alert('Failed to fetch outcomes: ' + extractErrorMessage(error, 'Unknown error'));
+            }
+          }}
+          onViewVivaTeams={async () => {
+            try {
+              const teams = await vivaTeamAPI.getAllVivaTeams(0, 100, selectedViva.student_number);
+              setStudentVivaTeams(teams);
+              setShowStudentVivaTeamsModal(true);
+            } catch (error) {
+              alert('Failed to fetch viva teams: ' + extractErrorMessage(error, 'Unknown error'));
+            }
+          }}
+          onViewSubmissions={async () => {
+            try {
+              const submissions = await submissionAPI.getSubmissions(0, 100, selectedViva.student_number);
+              setStudentSubmissions(submissions);
+              setShowStudentSubmissionsModal(true);
+            } catch (error) {
+              alert('Failed to fetch submissions: ' + extractErrorMessage(error, 'Unknown error'));
+            }
+          }}
+        />
+      )}
+
+      {/* Viva Outcomes Modal */}
+      {showVivaOutcomeModal && selectedViva && (
+        <VivaOutcomesModal
+          viva={selectedViva}
+          outcomes={vivaOutcomes}
+          onClose={() => {
+            setShowVivaOutcomeModal(false);
+            setSelectedViva(null);
+            setVivaOutcomes([]);
+          }}
+          onCreateOutcome={() => {
+            setShowCreateOutcomeModal(true);
+          }}
+          onEditOutcome={(outcome) => {
+            setSelectedOutcome(outcome);
+            setShowEditOutcomeModal(true);
+          }}
+        />
+      )}
+
+      {/* Create Outcome Modal */}
+      {showCreateOutcomeModal && selectedViva && (
+        <CreateOutcomeModal
+          vivaId={selectedViva.viva_id}
+          onClose={() => setShowCreateOutcomeModal(false)}
+          onSave={async (outcomeData) => {
+            try {
+              await vivaAPI.createVivaOutcome(selectedViva.viva_id, outcomeData);
+              setShowCreateOutcomeModal(false);
+              const outcomes = await vivaAPI.getVivaOutcomes(selectedViva.viva_id);
+              setVivaOutcomes(outcomes);
+            } catch (error) {
+              alert('Failed to create outcome: ' + extractErrorMessage(error, 'Unknown error'));
+            }
+          }}
+        />
+      )}
+
+      {/* Edit Outcome Modal */}
+      {showEditOutcomeModal && selectedOutcome && (
+        <EditOutcomeModal
+          outcome={selectedOutcome}
+          onClose={() => {
+            setShowEditOutcomeModal(false);
+            setSelectedOutcome(null);
+          }}
+          onSave={async (outcomeData) => {
+            try {
+              await vivaAPI.updateVivaOutcome(selectedOutcome.outcome_id, outcomeData);
+              setShowEditOutcomeModal(false);
+              setSelectedOutcome(null);
+              const outcomes = await vivaAPI.getVivaOutcomes(selectedViva.viva_id);
+              setVivaOutcomes(outcomes);
+            } catch (error) {
+              alert('Failed to update outcome: ' + extractErrorMessage(error, 'Unknown error'));
+            }
+          }}
+        />
+      )}
+
+      {/* Student Viva Teams Modal */}
+      {showStudentVivaTeamsModal && selectedViva && (
+        <StudentVivaTeamsModal
+          studentNumber={selectedViva.student_number}
+          vivaTeams={studentVivaTeams}
+          onClose={() => {
+            setShowStudentVivaTeamsModal(false);
+            setStudentVivaTeams([]);
+          }}
+        />
+      )}
+
+      {/* Student Submissions Modal */}
+      {showStudentSubmissionsModal && selectedViva && (
+        <StudentSubmissionsModal
+          studentNumber={selectedViva.student_number}
+          submissions={studentSubmissions}
+          onClose={() => {
+            setShowStudentSubmissionsModal(false);
+            setStudentSubmissions([]);
+          }}
+        />
+      )}
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
@@ -2564,6 +2943,8 @@ const SystemAdminDashboard = () => {
         return renderRegistrationManagement();
       case 'viva-teams':
         return renderVivaTeamManagement();
+      case 'viva':
+        return renderVivaManagement();
       case 'submissions':
         return renderSubmissionManagement();
       case 'profile':
@@ -2600,6 +2981,7 @@ const SystemAdminDashboard = () => {
             {activeSection === 'registrations' && 'Registrations'}
             {activeSection === 'submissions' && 'Submissions'}
             {activeSection === 'viva-teams' && 'Viva Teams'}
+            {activeSection === 'viva' && 'Viva Management'}
             {activeSection === 'profile' && 'Profile'}
           </h1>
           <div className="header-actions">
@@ -3168,6 +3550,7 @@ const UserDetailModal = ({ user, onClose }) => {
 const CreateStudentModal = ({ onClose, onSave }) => {
   const [formData, setFormData] = useState({
     student_number: '',
+    email: '',
     forename: '',
     surname: '',
     cohort: '',
@@ -3200,6 +3583,7 @@ const CreateStudentModal = ({ onClose, onSave }) => {
     // Validate using the current form data
     const requiredFields = [
       { field: 'student_number', label: 'Student Number' },
+      { field: 'email', label: 'Email' },
       { field: 'forename', label: 'Forename' },
       { field: 'surname', label: 'Surname' },
       { field: 'cohort', label: 'Cohort' },
@@ -3238,6 +3622,7 @@ const CreateStudentModal = ({ onClose, onSave }) => {
       const cleanedData = {
         ...currentFormData,
         student_number: currentFormData.student_number.trim(),
+        email: currentFormData.email.trim(),
         forename: currentFormData.forename.trim(),
         surname: currentFormData.surname.trim(),
         cohort: currentFormData.cohort.trim(),
@@ -3286,6 +3671,19 @@ const CreateStudentModal = ({ onClose, onSave }) => {
               />
             </div>
             <div className="form-group">
+              <label className="form-label">Email: *</label>
+              <input
+                type="email"
+                className="form-input"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                placeholder="Enter email address"
+              />
+            </div>
+          </div>
+          
+          <div className="form-row">
+            <div className="form-group">
               <label className="form-label">Course Code: *</label>
               <input
                 type="text"
@@ -3293,6 +3691,16 @@ const CreateStudentModal = ({ onClose, onSave }) => {
                 value={formData.course_code}
                 onChange={(e) => setFormData({...formData, course_code: e.target.value})}
                 placeholder="Enter course code"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Programme of Study: *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.programme_of_study}
+                onChange={(e) => setFormData({...formData, programme_of_study: e.target.value})}
+                placeholder="Enter programme of study"
               />
             </div>
           </div>
@@ -3329,12 +3737,12 @@ const CreateStudentModal = ({ onClose, onSave }) => {
               />
             </div>
             <div className="form-group">
-              <label>Programme of Study: *</label>
+              <label>Subject Area: *</label>
               <input
                 type="text"
-                value={formData.programme_of_study}
-                onChange={(e) => setFormData({...formData, programme_of_study: e.target.value})}
-                placeholder="Enter programme of study"
+                value={formData.subject_area}
+                onChange={(e) => setFormData({...formData, subject_area: e.target.value})}
+                placeholder="Enter subject area"
               />
             </div>
           </div>
@@ -3351,15 +3759,6 @@ const CreateStudentModal = ({ onClose, onSave }) => {
           
           <div className="form-row">
             <div className="form-group">
-              <label>Subject Area: *</label>
-              <input
-                type="text"
-                value={formData.subject_area}
-                onChange={(e) => setFormData({...formData, subject_area: e.target.value})}
-                placeholder="Enter subject area"
-              />
-            </div>
-            <div className="form-group">
               <label>Mode: *</label>
               <select
                 value={formData.mode}
@@ -3370,15 +3769,15 @@ const CreateStudentModal = ({ onClose, onSave }) => {
                 <option value="part-time">Part-time</option>
               </select>
             </div>
-          </div>
-          
-          <div className="form-group">
-            <label>Previous Institution:</label>
-            <input
-              type="text"
-              value={formData.previous_institution}
-              onChange={(e) => setFormData({...formData, previous_institution: e.target.value})}
-            />
+            <div className="form-group">
+              <label>Previous Institution:</label>
+              <input
+                type="text"
+                value={formData.previous_institution}
+                onChange={(e) => setFormData({...formData, previous_institution: e.target.value})}
+                placeholder="Enter previous institution"
+              />
+            </div>
           </div>
           
           <div className="checkbox-group">
@@ -5913,4 +6312,1042 @@ const SubmissionRejectModal = ({ submission, onClose, onSave }) => {
   );
 };
 
+// Create Viva Modal Component
+const CreateVivaModal = ({ onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    student_number: '',
+    stage: 'registration',
+    viva_type: 'initial',
+    date_of_viva: '',
+    time_of_viva: '',
+    location_of_viva: '',
+    date_confirmed_to_examiners: '',
+    date_confirmed_to_pgr: '',
+    organisation_process_completed: false,
+    confirmation_viva_has_taken_place: false,
+    viva_notes: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.student_number || !formData.date_of_viva) {
+      setError('Student Number and Date of Viva are required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      await onSave(formData);
+    } catch (error) {
+      setError(extractErrorMessage(error, 'Failed to create viva'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal-content large" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Create New Viva</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          {error && <div className="error-message">{error}</div>}
+          
+          <form onSubmit={handleSubmit} className="viva-form">
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Student Number *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.student_number}
+                  onChange={(e) => setFormData({...formData, student_number: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Stage *</label>
+                <select
+                  className="form-input"
+                  value={formData.stage}
+                  onChange={(e) => setFormData({...formData, stage: e.target.value})}
+                  required
+                >
+                  <option value="registration">Registration</option>
+                  <option value="progression">Progression</option>
+                  <option value="final">Final</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Viva Type *</label>
+                <select
+                  className="form-input"
+                  value={formData.viva_type}
+                  onChange={(e) => setFormData({...formData, viva_type: e.target.value})}
+                  required
+                >
+                  <option value="initial">Initial</option>
+                  <option value="resubmission">Resubmission</option>
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Date of Viva *</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_of_viva}
+                  onChange={(e) => setFormData({...formData, date_of_viva: e.target.value})}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Time of Viva</label>
+                <input
+                  type="time"
+                  className="form-input"
+                  value={formData.time_of_viva}
+                  onChange={(e) => setFormData({...formData, time_of_viva: e.target.value})}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Location</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.location_of_viva}
+                  onChange={(e) => setFormData({...formData, location_of_viva: e.target.value})}
+                  placeholder="e.g., Room 101, Online"
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Date Confirmed to Examiners</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_confirmed_to_examiners}
+                  onChange={(e) => setFormData({...formData, date_confirmed_to_examiners: e.target.value})}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Date Confirmed to PGR</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_confirmed_to_pgr}
+                  onChange={(e) => setFormData({...formData, date_confirmed_to_pgr: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.organisation_process_completed}
+                    onChange={(e) => setFormData({...formData, organisation_process_completed: e.target.checked})}
+                  />
+                  Organization Process Completed
+                </label>
+              </div>
+              
+              <div className="form-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.confirmation_viva_has_taken_place}
+                    onChange={(e) => setFormData({...formData, confirmation_viva_has_taken_place: e.target.checked})}
+                  />
+                  Viva Has Taken Place
+                </label>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Viva Notes</label>
+              <textarea
+                className="form-input"
+                rows="4"
+                value={formData.viva_notes}
+                onChange={(e) => setFormData({...formData, viva_notes: e.target.value})}
+                placeholder="Add any additional notes..."
+              />
+            </div>
+          </form>
+        </div>
+        
+        <div className="modal-footer">
+          <button type="button" className="btn secondary" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn primary" disabled={loading} onClick={handleSubmit}>
+            {loading ? 'Creating...' : 'Create Viva'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Edit Viva Modal Component
+const EditVivaModal = ({ viva, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    stage: viva.stage || 'registration',
+    viva_type: viva.viva_type || 'initial',
+    date_of_viva: viva.date_of_viva || '',
+    time_of_viva: viva.time_of_viva || '',
+    location_of_viva: viva.location_of_viva || '',
+    date_confirmed_to_examiners: viva.date_confirmed_to_examiners || '',
+    date_confirmed_to_pgr: viva.date_confirmed_to_pgr || '',
+    organisation_process_completed: viva.organisation_process_completed || false,
+    confirmation_viva_has_taken_place: viva.confirmation_viva_has_taken_place || false,
+    viva_notes: viva.viva_notes || ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      setLoading(true);
+      setError('');
+      await onSave(formData);
+    } catch (error) {
+      setError(extractErrorMessage(error, 'Failed to update viva'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal-content large" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Edit Viva #{viva.viva_id}</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          {error && <div className="error-message">{error}</div>}
+          
+          <form onSubmit={handleSubmit} className="viva-form">
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Stage</label>
+                <select
+                  className="form-input"
+                  value={formData.stage}
+                  onChange={(e) => setFormData({...formData, stage: e.target.value})}
+                >
+                  <option value="registration">Registration</option>
+                  <option value="progression">Progression</option>
+                  <option value="final">Final</option>
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Viva Type</label>
+                <select
+                  className="form-input"
+                  value={formData.viva_type}
+                  onChange={(e) => setFormData({...formData, viva_type: e.target.value})}
+                >
+                  <option value="initial">Initial</option>
+                  <option value="resubmission">Resubmission</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Date of Viva</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_of_viva}
+                  onChange={(e) => setFormData({...formData, date_of_viva: e.target.value})}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Time of Viva</label>
+                <input
+                  type="time"
+                  className="form-input"
+                  value={formData.time_of_viva}
+                  onChange={(e) => setFormData({...formData, time_of_viva: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Location</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.location_of_viva}
+                onChange={(e) => setFormData({...formData, location_of_viva: e.target.value})}
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Date Confirmed to Examiners</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_confirmed_to_examiners}
+                  onChange={(e) => setFormData({...formData, date_confirmed_to_examiners: e.target.value})}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Date Confirmed to PGR</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_confirmed_to_pgr}
+                  onChange={(e) => setFormData({...formData, date_confirmed_to_pgr: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.organisation_process_completed}
+                    onChange={(e) => setFormData({...formData, organisation_process_completed: e.target.checked})}
+                  />
+                  Organization Process Completed
+                </label>
+              </div>
+              
+              <div className="form-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.confirmation_viva_has_taken_place}
+                    onChange={(e) => setFormData({...formData, confirmation_viva_has_taken_place: e.target.checked})}
+                  />
+                  Viva Has Taken Place
+                </label>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Viva Notes</label>
+              <textarea
+                className="form-input"
+                rows="4"
+                value={formData.viva_notes}
+                onChange={(e) => setFormData({...formData, viva_notes: e.target.value})}
+              />
+            </div>
+          </form>
+        </div>
+        
+        <div className="modal-footer">
+          <button type="button" className="btn secondary" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn primary" disabled={loading} onClick={handleSubmit}>
+            {loading ? 'Updating...' : 'Update Viva'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Viva Detail Modal Component
+const VivaDetailModal = ({ viva, onClose, onEdit, onConfirm, onCompleteOrganization, onViewOutcomes, onViewVivaTeams, onViewSubmissions }) => {
+  return (
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal-content large" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Viva Details - #{viva.viva_id}</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          <div className="detail-section">
+            <h4 className="detail-section-title">Basic Information</h4>
+            <div className="detail-row">
+              <span className="detail-label">Viva ID:</span>
+              <span className="detail-value">#{viva.viva_id}</span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Student Number:</span>
+              <span className="detail-value">{viva.student_number}</span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Stage:</span>
+              <span className={`status-badge stage-${viva.stage}`}>
+                {viva.stage.charAt(0).toUpperCase() + viva.stage.slice(1)}
+              </span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Viva Type:</span>
+              <span className={`status-badge viva-type-${viva.viva_type}`}>
+                {viva.viva_type.charAt(0).toUpperCase() + viva.viva_type.slice(1)}
+              </span>
+            </div>
+          </div>
+
+          <div className="detail-section">
+            <h4 className="detail-section-title">Schedule</h4>
+            <div className="detail-row">
+              <span className="detail-label">Date of Viva:</span>
+              <span className="detail-value">
+                {viva.date_of_viva ? new Date(viva.date_of_viva).toLocaleDateString() : 'Not set'}
+              </span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Time of Viva:</span>
+              <span className="detail-value">{viva.time_of_viva || 'Not set'}</span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Location:</span>
+              <span className="detail-value">{viva.location_of_viva || 'Not set'}</span>
+            </div>
+          </div>
+
+          <div className="detail-section">
+            <h4 className="detail-section-title">Confirmations</h4>
+            <div className="detail-row">
+              <span className="detail-label">Date Confirmed to Examiners:</span>
+              <span className="detail-value">
+                {viva.date_confirmed_to_examiners ? new Date(viva.date_confirmed_to_examiners).toLocaleDateString() : 'Not confirmed'}
+              </span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Date Confirmed to PGR:</span>
+              <span className="detail-value">
+                {viva.date_confirmed_to_pgr ? new Date(viva.date_confirmed_to_pgr).toLocaleDateString() : 'Not confirmed'}
+              </span>
+            </div>
+          </div>
+
+          <div className="detail-section">
+            <h4 className="detail-section-title">Status</h4>
+            <div className="detail-row">
+              <span className="detail-label">Organization Process:</span>
+              <span className={`status-badge ${viva.organisation_process_completed ? 'confirmed' : 'pending'}`}>
+                {viva.organisation_process_completed ? '✅ Completed' : '⏳ Pending'}
+              </span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Viva Status:</span>
+              <span className={`status-badge ${viva.confirmation_viva_has_taken_place ? 'confirmed' : 'pending'}`}>
+                {viva.confirmation_viva_has_taken_place ? '✅ Taken Place' : '⏳ Not Confirmed'}
+              </span>
+            </div>
+          </div>
+
+          {viva.viva_notes && (
+            <div className="detail-section">
+              <h4 className="detail-section-title">Notes</h4>
+              <div className="detail-notes">
+                {viva.viva_notes}
+              </div>
+            </div>
+          )}
+
+          <div className="detail-section">
+            <h4 className="detail-section-title">Timestamps</h4>
+            <div className="detail-row">
+              <span className="detail-label">Created:</span>
+              <span className="detail-value">
+                {viva.created_date ? new Date(viva.created_date).toLocaleString() : 'N/A'}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="modal-footer">
+          <button type="button" className="btn secondary" onClick={onClose}>Close</button>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button type="button" className="btn btn-sm primary" onClick={onEdit}>
+              ✏️ Edit
+            </button>
+            {!viva.confirmation_viva_has_taken_place && (
+              <button type="button" className="btn btn-sm warning" onClick={onConfirm}>
+                ✅ Confirm
+              </button>
+            )}
+            {!viva.organisation_process_completed && (
+              <button type="button" className="btn btn-sm info" onClick={onCompleteOrganization}>
+                📋 Complete
+              </button>
+            )}
+            <button type="button" className="btn btn-sm success" onClick={onViewOutcomes}>
+              📊 Outcomes
+            </button>
+            <button type="button" className="btn btn-sm primary" onClick={onViewVivaTeams}>
+              🎯 Viva Teams
+            </button>
+            <button type="button" className="btn btn-sm info" onClick={onViewSubmissions}>
+              📝 Submissions
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Student Submissions Modal Component
+const StudentSubmissionsModal = ({ studentNumber, submissions, onClose }) => {
+  return (
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal-content extra-large" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Submissions for Student {studentNumber}</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          {submissions && submissions.length > 0 ? (
+            <div className="table-scroll">
+              <table className="dashboard-table">
+                <thead>
+                  <tr>
+                    <th>Submission ID</th>
+                    <th>Type</th>
+                    <th>Stage</th>
+                    <th>Status</th>
+                    <th>Submitted Date</th>
+                    <th>Reviewed Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {submissions.map(submission => (
+                    <tr key={submission.id}>
+                      <td><strong>#{submission.id}</strong></td>
+                      <td>
+                        <span className={`status-badge type-${submission.submission_type}`}>
+                          {submission.submission_type?.charAt(0).toUpperCase() + submission.submission_type?.slice(1) || 'N/A'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`status-badge stage-${submission.stage}`}>
+                          {submission.stage?.charAt(0).toUpperCase() + submission.stage?.slice(1) || 'N/A'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`status-badge ${submission.status}`}>
+                          {submission.status?.charAt(0).toUpperCase() + submission.status?.slice(1) || 'N/A'}
+                        </span>
+                      </td>
+                      <td>
+                        {submission.submission_date ? new Date(submission.submission_date).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td>
+                        {submission.reviewed_date ? new Date(submission.reviewed_date).toLocaleDateString() : 'Not reviewed'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>No submissions found for this student.</p>
+            </div>
+          )}
+        </div>
+        
+        <div className="modal-footer">
+          <button type="button" className="btn secondary" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Student Viva Teams Modal Component
+const StudentVivaTeamsModal = ({ studentNumber, vivaTeams, onClose }) => {
+  return (
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal-content extra-large" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Viva Teams for Student {studentNumber}</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          {vivaTeams && vivaTeams.length > 0 ? (
+            <div className="table-scroll">
+              <table className="dashboard-table">
+                <thead>
+                  <tr>
+                    <th>Team ID</th>
+                    <th>Stage</th>
+                    <th>Status</th>
+                    <th>Examiners</th>
+                    <th>Dates</th>
+                    <th>Location</th>
+                    <th>Outcome</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vivaTeams.map(team => (
+                    <tr key={team.id}>
+                      <td><strong>#{team.id}</strong></td>
+                      <td>
+                        <span className={`status-badge stage-${team.stage}`}>
+                          {team.stage.charAt(0).toUpperCase() + team.stage.slice(1)}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`status-badge ${team.status}`}>
+                          {team.status.charAt(0).toUpperCase() + team.status.slice(1)}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: '0.85rem' }}>
+                          <div><strong>Int 1:</strong> {team.internal_examiner_1_id || 'N/A'}</div>
+                          <div><strong>Int 2:</strong> {team.internal_examiner_2_id || 'N/A'}</div>
+                          <div><strong>Ext:</strong> {team.external_examiner_name || 'N/A'}</div>
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: '0.85rem' }}>
+                          <div><strong>Proposed:</strong> {team.proposed_date ? new Date(team.proposed_date).toLocaleDateString() : 'N/A'}</div>
+                          <div><strong>Scheduled:</strong> {team.scheduled_date ? new Date(team.scheduled_date).toLocaleDateString() : 'N/A'}</div>
+                        </div>
+                      </td>
+                      <td>{team.location || 'TBD'}</td>
+                      <td>
+                        {team.outcome ? (
+                          <span className={`status-badge outcome-${team.outcome.toLowerCase()}`}>
+                            {team.outcome}
+                          </span>
+                        ) : 'Pending'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>No viva teams found for this student.</p>
+            </div>
+          )}
+        </div>
+        
+        <div className="modal-footer">
+          <button type="button" className="btn secondary" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Viva Outcomes Modal Component
+const VivaOutcomesModal = ({ viva, outcomes, onClose, onCreateOutcome, onEditOutcome }) => {
+  return (
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal-content extra-large" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Viva Outcomes - Viva #{viva.viva_id}</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          <div className="outcomes-header">
+            <h4>Student: {viva.student_number}</h4>
+            <button className="btn primary" onClick={onCreateOutcome}>
+              ➕ Add Outcome
+            </button>
+          </div>
+
+          {outcomes && outcomes.length > 0 ? (
+            <div className="outcomes-list">
+              {outcomes.map((outcome, index) => (
+                <div key={outcome.outcome_id} className="outcome-card">
+                  <div className="outcome-header">
+                    <h5>Outcome #{index + 1} (ID: {outcome.outcome_id})</h5>
+                    <button className="btn btn-sm secondary" onClick={() => onEditOutcome(outcome)}>
+                      ✏️ Edit
+                    </button>
+                  </div>
+                  <div className="outcome-details">
+                    <div className="detail-row">
+                      <span className="detail-label">Initial Outcome:</span>
+                      <span className="detail-value">{outcome.initial_outcome || 'N/A'}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">GSBOS Outcome:</span>
+                      <span className="detail-value">{outcome.gsbos_outcome || 'N/A'}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Resubmission Required:</span>
+                      <span className={`status-badge ${outcome.resubmission_required ? 'warning' : 'confirmed'}`}>
+                        {outcome.resubmission_required ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Amendments Received:</span>
+                      <span className="detail-value">
+                        {outcome.date_specification_of_amendments_received 
+                          ? new Date(outcome.date_specification_of_amendments_received).toLocaleDateString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Chair's Report:</span>
+                      <span className="detail-value">
+                        {outcome.date_chairs_report_received 
+                          ? new Date(outcome.date_chairs_report_received).toLocaleDateString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    {outcome.outcome_notes && (
+                      <div className="detail-row">
+                        <span className="detail-label">Notes:</span>
+                        <span className="detail-value">{outcome.outcome_notes}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>No outcomes recorded for this viva yet.</p>
+              <button className="btn primary" onClick={onCreateOutcome}>
+                ➕ Add First Outcome
+              </button>
+            </div>
+          )}
+        </div>
+        
+        <div className="modal-footer">
+          <button type="button" className="btn secondary" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Create Outcome Modal Component
+const CreateOutcomeModal = ({ vivaId, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    initial_outcome: '',
+    date_specification_of_amendments_received: '',
+    date_chairs_report_received: '',
+    date_paperwork_considered_by_gsbos: '',
+    gsbos_outcome: '',
+    date_outcome_sent_to_pgr: '',
+    resubmission_required: false,
+    outcome_notes: '',
+    viva_id: vivaId
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      setLoading(true);
+      setError('');
+      await onSave(formData);
+    } catch (error) {
+      setError(extractErrorMessage(error, 'Failed to create outcome'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal-content large" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Create Viva Outcome</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          {error && <div className="error-message">{error}</div>}
+          
+          <form onSubmit={handleSubmit} className="outcome-form">
+            <div className="form-group">
+              <label className="form-label">Initial Outcome</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.initial_outcome}
+                onChange={(e) => setFormData({...formData, initial_outcome: e.target.value})}
+                placeholder="e.g., Pass with minor corrections"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">GSBOS Outcome</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.gsbos_outcome}
+                onChange={(e) => setFormData({...formData, gsbos_outcome: e.target.value})}
+                placeholder="e.g., Approved"
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Date Amendments Received</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_specification_of_amendments_received}
+                  onChange={(e) => setFormData({...formData, date_specification_of_amendments_received: e.target.value})}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Date Chair's Report Received</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_chairs_report_received}
+                  onChange={(e) => setFormData({...formData, date_chairs_report_received: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Date Considered by GSBOS</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_paperwork_considered_by_gsbos}
+                  onChange={(e) => setFormData({...formData, date_paperwork_considered_by_gsbos: e.target.value})}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Date Sent to PGR</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_outcome_sent_to_pgr}
+                  onChange={(e) => setFormData({...formData, date_outcome_sent_to_pgr: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="form-group checkbox-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={formData.resubmission_required}
+                  onChange={(e) => setFormData({...formData, resubmission_required: e.target.checked})}
+                />
+                Resubmission Required
+              </label>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Outcome Notes</label>
+              <textarea
+                className="form-input"
+                rows="4"
+                value={formData.outcome_notes}
+                onChange={(e) => setFormData({...formData, outcome_notes: e.target.value})}
+                placeholder="Add any additional notes about the outcome..."
+              />
+            </div>
+          </form>
+        </div>
+        
+        <div className="modal-footer">
+          <button type="button" className="btn secondary" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn primary" disabled={loading} onClick={handleSubmit}>
+            {loading ? 'Creating...' : 'Create Outcome'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Edit Outcome Modal Component
+const EditOutcomeModal = ({ outcome, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    initial_outcome: outcome.initial_outcome || '',
+    date_specification_of_amendments_received: outcome.date_specification_of_amendments_received || '',
+    date_chairs_report_received: outcome.date_chairs_report_received || '',
+    date_paperwork_considered_by_gsbos: outcome.date_paperwork_considered_by_gsbos || '',
+    gsbos_outcome: outcome.gsbos_outcome || '',
+    date_outcome_sent_to_pgr: outcome.date_outcome_sent_to_pgr || '',
+    resubmission_required: outcome.resubmission_required || false,
+    outcome_notes: outcome.outcome_notes || ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      setLoading(true);
+      setError('');
+      await onSave(formData);
+    } catch (error) {
+      setError(extractErrorMessage(error, 'Failed to update outcome'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal-content large" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Edit Viva Outcome #{outcome.outcome_id}</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          {error && <div className="error-message">{error}</div>}
+          
+          <form onSubmit={handleSubmit} className="outcome-form">
+            <div className="form-group">
+              <label className="form-label">Initial Outcome</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.initial_outcome}
+                onChange={(e) => setFormData({...formData, initial_outcome: e.target.value})}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">GSBOS Outcome</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.gsbos_outcome}
+                onChange={(e) => setFormData({...formData, gsbos_outcome: e.target.value})}
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Date Amendments Received</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_specification_of_amendments_received}
+                  onChange={(e) => setFormData({...formData, date_specification_of_amendments_received: e.target.value})}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Date Chair's Report Received</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_chairs_report_received}
+                  onChange={(e) => setFormData({...formData, date_chairs_report_received: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Date Considered by GSBOS</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_paperwork_considered_by_gsbos}
+                  onChange={(e) => setFormData({...formData, date_paperwork_considered_by_gsbos: e.target.value})}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Date Sent to PGR</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={formData.date_outcome_sent_to_pgr}
+                  onChange={(e) => setFormData({...formData, date_outcome_sent_to_pgr: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="form-group checkbox-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={formData.resubmission_required}
+                  onChange={(e) => setFormData({...formData, resubmission_required: e.target.checked})}
+                />
+                Resubmission Required
+              </label>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Outcome Notes</label>
+              <textarea
+                className="form-input"
+                rows="4"
+                value={formData.outcome_notes}
+                onChange={(e) => setFormData({...formData, outcome_notes: e.target.value})}
+              />
+            </div>
+          </form>
+        </div>
+        
+        <div className="modal-footer">
+          <button type="button" className="btn secondary" onClick={onClose}>Cancel</button>
+          <button type="submit" className="btn primary" disabled={loading} onClick={handleSubmit}>
+            {loading ? 'Updating...' : 'Update Outcome'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default SystemAdminDashboard;
+

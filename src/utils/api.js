@@ -149,8 +149,96 @@ export const studentAPI = {
     return response.data;
   },
   
+  // Get current student (tries multiple strategies)
+  getCurrentStudent: async (user) => {
+    console.log('Attempting to find student for user:', user);
+    
+    // Strategy 0: Check if user object already has student_number
+    if (user.student_number) {
+      console.log('User object has student_number:', user.student_number);
+      try {
+        const response = await api.get(`/api/v1/students/${user.student_number}`);
+        console.log('Strategy 0 SUCCESS - Found student:', response.data);
+        return response.data;
+      } catch (error) {
+        console.log('Strategy 0 failed');
+      }
+    }
+    
+    // Strategy 1: Try if there's a /students/me endpoint
+    try {
+      console.log('Strategy 1: Trying /api/v1/students/me endpoint...');
+      const response = await api.get('/api/v1/students/me');
+      console.log('Strategy 1 SUCCESS - Found student via /me endpoint:', response.data);
+      return response.data;
+    } catch (error) {
+      console.log('Strategy 1 failed - No /students/me endpoint');
+    }
+    
+    // Strategy 2: Try username as student_number (most common case)
+    try {
+      console.log(`Strategy 2: Trying to get student by student_number: ${user.username}`);
+      const response = await api.get(`/api/v1/students/${user.username}`);
+      console.log('Strategy 2 SUCCESS - Found student:', response.data);
+      return response.data;
+    } catch (error) {
+      console.log('Strategy 2 failed - Username is not student_number');
+    }
+    
+    // Strategy 3 & 4: Fetch all students (may fail due to permissions)
+    try {
+      console.log('Strategy 3/4: Fetching all students to match by user_id or email...');
+      const response = await api.get(`/api/v1/students/?skip=0&limit=1000`);
+      const students = response.data;
+      console.log(`Fetched ${students.length} students`);
+      
+      if (students.length === 0) {
+        console.warn('⚠️ No students returned - likely a permissions issue. Student role cannot list all students.');
+        throw new Error('Permission denied: Cannot list students. Backend needs to add student_number to /auth/me response or create /students/me endpoint.');
+      }
+      
+      // Try to find by user_id
+      console.log(`Looking for student with user_id: ${user.id}`);
+      let student = students.find(s => s.user_id === user.id);
+      if (student) {
+        console.log('Strategy 3 SUCCESS - Found student by user_id:', student);
+        return student;
+      }
+      console.log('No student found with user_id:', user.id);
+      
+      // Try to find by email
+      console.log(`Looking for student with email: ${user.email}`);
+      student = students.find(s => s.email && s.email.toLowerCase() === user.email.toLowerCase());
+      if (student) {
+        console.log('Strategy 4 SUCCESS - Found student by email:', student);
+        return student;
+      }
+      console.log('No student found with email:', user.email);
+      
+    } catch (error) {
+      if (error.message.includes('Permission denied')) {
+        throw error;
+      }
+      console.error('Failed to fetch students list:', error);
+    }
+    
+    throw new Error(`Unable to find student record. Please ask your backend developer to add "student_number" field to the /api/v1/auth/me endpoint response.`);
+  },
+  
+  // Keep the old function for backwards compatibility
+  getStudentByUserId: async (userId) => {
+    const response = await api.get(`/api/v1/students/?skip=0&limit=1000`);
+    const students = response.data;
+    const student = students.find(s => s.user_id === userId);
+    if (!student) {
+      throw new Error(`No student found for user_id: ${userId}`);
+    }
+    return student;
+  },
+  
   createStudent: async (studentData) => {
-    const response = await api.post('/api/v1/students/', studentData);
+    const { email, ...bodyData } = studentData;
+    const response = await api.post(`/api/v1/students/?email=${encodeURIComponent(email)}`, bodyData);
     return response.data;
   },
   
@@ -162,6 +250,17 @@ export const studentAPI = {
   deleteStudent: async (studentNumber) => {
     const response = await api.delete(`/api/v1/students/${studentNumber}`);
     return response.data;
+  },
+  
+  // Export the getStudentByUserId for external use
+  getStudentByUserId: async (userId) => {
+    const response = await api.get(`/api/v1/students/?skip=0&limit=1000`);
+    const students = response.data;
+    const student = students.find(s => s.user_id === userId);
+    if (!student) {
+      throw new Error(`No student found for user_id: ${userId}`);
+    }
+    return student;
   }
 };
 
@@ -194,6 +293,46 @@ export const supervisorAPI = {
   deleteSupervisor: async (supervisorId) => {
     const response = await api.delete(`/api/v1/supervisors/${supervisorId}`);
     return response.data;
+  },
+  
+  // Get current supervisor (tries multiple strategies)
+  getCurrentSupervisor: async (user) => {
+    // Strategy 1: Try to find by user_id
+    try {
+      const response = await api.get(`/api/v1/supervisors/?skip=0&limit=1000`);
+      const supervisors = response.data;
+      const supervisor = supervisors.find(s => s.user_id === user.id);
+      if (supervisor) {
+        return supervisor;
+      }
+    } catch (error) {
+      console.error('Failed to fetch supervisors list:', error);
+    }
+    
+    // Strategy 2: Try to find by email
+    try {
+      const response = await api.get(`/api/v1/supervisors/?skip=0&limit=1000`);
+      const supervisors = response.data;
+      const supervisor = supervisors.find(s => s.email === user.email);
+      if (supervisor) {
+        return supervisor;
+      }
+    } catch (error) {
+      console.error('Failed to match by email:', error);
+    }
+    
+    throw new Error('Unable to find supervisor record. Please contact administrator.');
+  },
+  
+  // Keep the old function for backwards compatibility
+  getSupervisorByUserId: async (userId) => {
+    const response = await api.get(`/api/v1/supervisors/?skip=0&limit=1000`);
+    const supervisors = response.data;
+    const supervisor = supervisors.find(s => s.user_id === userId);
+    if (!supervisor) {
+      throw new Error(`No supervisor found for user_id: ${userId}`);
+    }
+    return supervisor;
   }
 };
 
@@ -438,6 +577,132 @@ export const submissionAPI = {
       return response.data;
     } catch (error) {
       console.error(`Error reviewing submission ${submissionId}:`, error);
+      throw error;
+    }
+  }
+};
+
+// Viva API functions
+export const vivaAPI = {
+  createViva: async (vivaData) => {
+    try {
+      console.log('Creating viva with data:', vivaData);
+      const response = await api.post('/api/v1/vivas/', vivaData);
+      console.log('Create viva response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating viva:', error);
+      throw error;
+    }
+  },
+
+  getAllVivas: async (skip = 0, limit = 100, studentNumber = '', stage = '') => {
+    try {
+      let url = `/api/v1/vivas/?skip=${skip}&limit=${limit}`;
+      if (studentNumber) url += `&student_number=${encodeURIComponent(studentNumber)}`;
+      if (stage) url += `&stage=${encodeURIComponent(stage)}`;
+      console.log('Fetching vivas with URL:', url);
+      const response = await api.get(url);
+      console.log('Fetched vivas:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching vivas:', error);
+      throw error;
+    }
+  },
+
+  getVivaById: async (vivaId) => {
+    try {
+      console.log(`Fetching viva with ID ${vivaId}`);
+      const response = await api.get(`/api/v1/vivas/${vivaId}`);
+      console.log('Fetched viva:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching viva ${vivaId}:`, error);
+      throw error;
+    }
+  },
+
+  updateViva: async (vivaId, vivaData) => {
+    try {
+      console.log(`Updating viva ${vivaId} with data:`, vivaData);
+      const response = await api.put(`/api/v1/vivas/${vivaId}`, vivaData);
+      console.log('Update viva response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating viva ${vivaId}:`, error);
+      throw error;
+    }
+  },
+
+  getStudentVivas: async (studentNumber) => {
+    try {
+      console.log(`Fetching vivas for student ${studentNumber}`);
+      const response = await api.get(`/api/v1/vivas/student/${studentNumber}`);
+      console.log('Fetched student vivas:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching student vivas for ${studentNumber}:`, error);
+      throw error;
+    }
+  },
+
+  createVivaOutcome: async (vivaId, outcomeData) => {
+    try {
+      console.log(`Creating outcome for viva ${vivaId} with data:`, outcomeData);
+      const response = await api.post(`/api/v1/vivas/${vivaId}/outcomes`, outcomeData);
+      console.log('Create viva outcome response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error creating outcome for viva ${vivaId}:`, error);
+      throw error;
+    }
+  },
+
+  getVivaOutcomes: async (vivaId) => {
+    try {
+      console.log(`Fetching outcomes for viva ${vivaId}`);
+      const response = await api.get(`/api/v1/vivas/${vivaId}/outcomes`);
+      console.log('Fetched viva outcomes:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching outcomes for viva ${vivaId}:`, error);
+      throw error;
+    }
+  },
+
+  updateVivaOutcome: async (outcomeId, outcomeData) => {
+    try {
+      console.log(`Updating outcome ${outcomeId} with data:`, outcomeData);
+      const response = await api.put(`/api/v1/vivas/outcomes/${outcomeId}`, outcomeData);
+      console.log('Update viva outcome response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating outcome ${outcomeId}:`, error);
+      throw error;
+    }
+  },
+
+  confirmViva: async (vivaId) => {
+    try {
+      console.log(`Confirming viva ${vivaId}`);
+      const response = await api.post(`/api/v1/vivas/${vivaId}/confirm`);
+      console.log('Confirm viva response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error confirming viva ${vivaId}:`, error);
+      throw error;
+    }
+  },
+
+  completeVivaOrganization: async (vivaId) => {
+    try {
+      console.log(`Completing organization for viva ${vivaId}`);
+      const response = await api.post(`/api/v1/vivas/${vivaId}/complete-organization`);
+      console.log('Complete viva organization response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error completing organization for viva ${vivaId}:`, error);
       throw error;
     }
   }

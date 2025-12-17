@@ -3004,6 +3004,7 @@ const UserDetailModal = ({ user, onClose }) => {
 const CreateStudentModal = ({ onClose, onSave }) => {
   const [formData, setFormData] = useState({
     student_number: '',
+    email: '',
     forename: '',
     surname: '',
     cohort: '',
@@ -3036,6 +3037,7 @@ const CreateStudentModal = ({ onClose, onSave }) => {
     // Validate using the current form data
     const requiredFields = [
       { field: 'student_number', label: 'Student Number' },
+      { field: 'email', label: 'Email' },
       { field: 'forename', label: 'Forename' },
       { field: 'surname', label: 'Surname' },
       { field: 'cohort', label: 'Cohort' },
@@ -3074,6 +3076,7 @@ const CreateStudentModal = ({ onClose, onSave }) => {
       const cleanedData = {
         ...currentFormData,
         student_number: currentFormData.student_number.trim(),
+        email: currentFormData.email.trim(),
         forename: currentFormData.forename.trim(),
         surname: currentFormData.surname.trim(),
         cohort: currentFormData.cohort.trim(),
@@ -3122,6 +3125,19 @@ const CreateStudentModal = ({ onClose, onSave }) => {
               />
             </div>
             <div className="form-group">
+              <label className="form-label">Email: *</label>
+              <input
+                type="email"
+                className="form-input"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                placeholder="Enter email address"
+              />
+            </div>
+          </div>
+          
+          <div className="form-row">
+            <div className="form-group">
               <label className="form-label">Course Code: *</label>
               <input
                 type="text"
@@ -3129,6 +3145,16 @@ const CreateStudentModal = ({ onClose, onSave }) => {
                 value={formData.course_code}
                 onChange={(e) => setFormData({...formData, course_code: e.target.value})}
                 placeholder="Enter course code"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Programme of Study: *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.programme_of_study}
+                onChange={(e) => setFormData({...formData, programme_of_study: e.target.value})}
+                placeholder="Enter programme of study"
               />
             </div>
           </div>
@@ -3165,12 +3191,12 @@ const CreateStudentModal = ({ onClose, onSave }) => {
               />
             </div>
             <div className="form-group">
-              <label>Programme of Study: *</label>
+              <label>Subject Area: *</label>
               <input
                 type="text"
-                value={formData.programme_of_study}
-                onChange={(e) => setFormData({...formData, programme_of_study: e.target.value})}
-                placeholder="Enter programme of study"
+                value={formData.subject_area}
+                onChange={(e) => setFormData({...formData, subject_area: e.target.value})}
+                placeholder="Enter subject area"
               />
             </div>
           </div>
@@ -3187,15 +3213,6 @@ const CreateStudentModal = ({ onClose, onSave }) => {
           
           <div className="form-row">
             <div className="form-group">
-              <label>Subject Area: *</label>
-              <input
-                type="text"
-                value={formData.subject_area}
-                onChange={(e) => setFormData({...formData, subject_area: e.target.value})}
-                placeholder="Enter subject area"
-              />
-            </div>
-            <div className="form-group">
               <label>Mode: *</label>
               <select
                 value={formData.mode}
@@ -3206,15 +3223,15 @@ const CreateStudentModal = ({ onClose, onSave }) => {
                 <option value="part-time">Part-time</option>
               </select>
             </div>
-          </div>
-          
-          <div className="form-group">
-            <label>Previous Institution:</label>
-            <input
-              type="text"
-              value={formData.previous_institution}
-              onChange={(e) => setFormData({...formData, previous_institution: e.target.value})}
-            />
+            <div className="form-group">
+              <label>Previous Institution:</label>
+              <input
+                type="text"
+                value={formData.previous_institution}
+                onChange={(e) => setFormData({...formData, previous_institution: e.target.value})}
+                placeholder="Enter previous institution"
+              />
+            </div>
           </div>
           
           <div className="checkbox-group">

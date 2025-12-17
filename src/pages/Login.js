@@ -196,13 +196,13 @@ const Login = () => {
               )}
             </button>
 
-            <div className="auth-divider" style={{ textAlign: 'center', margin: 0, fontSize: 11, lineHeight: 1 }}>
+            {/* <div className="auth-divider" style={{ textAlign: 'center', margin: 0, fontSize: 11, lineHeight: 1 }}>
               <span>Don't have an account?</span>
             </div>
 
             <Link to="/register" className="auth-button secondary" style={{ width: '100%', height: 34, fontSize: 15, marginTop: 0 }}>
               Create Account
-            </Link>
+            </Link> */}
           </form>
 
           <div className="auth-footer" style={{ textAlign: 'center', fontSize: 12, marginTop: 10 }}>

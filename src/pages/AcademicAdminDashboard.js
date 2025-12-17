@@ -2041,7 +2041,7 @@ const AcademicAdminDashboard = () => {
       {renderSidebar()}
       <main className={`dashboard-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         {/* Mobile Menu Button */}
-        <button 
+        {/* <button 
           className="mobile-menu-btn"
           onClick={() => setSidebarOpen(true)}
           aria-label="Open navigation menu"
@@ -2049,7 +2049,7 @@ const AcademicAdminDashboard = () => {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" strokeWidth="2"/>
           </svg>
-        </button>
+        </button> */}
         
         {renderContent()}
       </main>

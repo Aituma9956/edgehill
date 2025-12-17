@@ -77,12 +77,26 @@ const StudentDashboard = () => {
       setLoading(true);
       setError('');
       
-      // Get student details using the student number from user context
-      const studentResponse = await studentAPI.getStudentByNumber(user.username);
+      // Try to get student details - the username IS the student_number in most cases
+      let studentResponse;
+      let studentNumber;
+      
+      try {
+        // First, try using username directly as student_number
+        studentNumber = user.username;
+        studentResponse = await studentAPI.getStudentByNumber(studentNumber);
+        console.log('Found student using username as student_number:', studentResponse);
+      } catch (firstError) {
+        console.log('Username is not student_number, trying other methods...');
+        // Fallback to the comprehensive search
+        studentResponse = await studentAPI.getCurrentStudent(user);
+        studentNumber = studentResponse.student_number;
+      }
+      
       setStudentData(studentResponse);
       
       // Get student supervisors
-      const supervisorsResponse = await assignmentAPI.getStudentSupervisors(user.username);
+      const supervisorsResponse = await assignmentAPI.getStudentSupervisors(studentNumber);
       setStudentSupervisors(supervisorsResponse);
       
       // Get all supervisors for reference
@@ -90,7 +104,7 @@ const StudentDashboard = () => {
       setAllSupervisors(allSupervisorsResponse);
       
       // Get student viva teams
-      const vivaTeamsResponse = await vivaTeamAPI.getAll({ student_number: user.username });
+      const vivaTeamsResponse = await vivaTeamAPI.getAll({ student_number: studentNumber });
       setVivaTeams(vivaTeamsResponse);
       
       // Get student submissions
@@ -106,7 +120,9 @@ const StudentDashboard = () => {
   const fetchSubmissions = async () => {
     try {
       setSubmissionsLoading(true);
-      const submissionsResponse = await submissionAPI.getSubmissions(user.username);
+      // Use student_number from studentData if available, fallback to user.username
+      const studentNumber = studentData?.student_number || user.username;
+      const submissionsResponse = await submissionAPI.getSubmissions(studentNumber);
       setSubmissions(submissionsResponse || []);
     } catch (err) {
       console.error('Failed to fetch submissions:', err);
@@ -202,7 +218,7 @@ const StudentDashboard = () => {
       }
       
       const submissionData = {
-        student_number: user.username,
+        student_number: studentData?.student_number || user.username,
         submission_type: submissionForm.submission_type,
         title: submissionForm.title,
         description: submissionForm.description
@@ -785,7 +801,7 @@ const StudentDashboard = () => {
                 <span className="label-icon">✅</span>
                 Account Status
               </label>
-              <div className="checkbox-wrapper">
+              {/* <div className="checkbox-wrapper">
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
@@ -795,7 +811,7 @@ const StudentDashboard = () => {
                   />
                   <span className="checkbox-text">Active Account</span>
                 </label>
-              </div>
+              </div> */}
             </div>
             
             <div className="form-group">
@@ -1918,7 +1934,7 @@ const StudentDashboard = () => {
         }}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">Create New Submission</h3>
+              <h3 className="modal-title">Submission Details</h3>
               <button 
                 className="modal-close" 
                 onClick={() => {
@@ -2005,7 +2021,7 @@ const StudentDashboard = () => {
                 className="btn btn-primary"
                 onClick={handleCreateSubmission}
               >
-                Create Submission
+                Submit
               </button>
             </div>
           </div>

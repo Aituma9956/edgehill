@@ -101,11 +101,15 @@ const SupervisorDashboard = () => {
     setStudentsError('');
     try {
       if (!user || !user.id) {
-        throw new Error('Supervisor ID not available');
+        throw new Error('User ID not available');
       }
       
+      // First, get the supervisor record to find supervisor_id
+      const supervisorData = await studentAPI.getSupervisorByUserId(user.id);
+      const supervisorId = supervisorData.supervisor_id;
+      
       // Get assigned students for this supervisor
-      const assignments = await assignmentAPI.getSupervisorStudents(user.id);
+      const assignments = await assignmentAPI.getSupervisorStudents(supervisorId);
       
       if (!assignments || assignments.length === 0) {
         setStudents([]);
@@ -190,12 +194,16 @@ const SupervisorDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       if (!user || !user.id) {
-        console.error('Supervisor ID not available for dashboard data');
+        console.error('User ID not available for dashboard data');
         return;
       }
       
+      // First, get the supervisor record to find supervisor_id
+      const supervisorData = await studentAPI.getCurrentSupervisor(user);
+      const supervisorId = supervisorData.supervisor_id;
+      
       const [assignedStudentsResponse, submissionsResponse, vivaTeamsResponse] = await Promise.all([
-        assignmentAPI.getSupervisorStudents(user.id),
+        assignmentAPI.getSupervisorStudents(supervisorId),
         submissionAPI.getSubmissions(),
         vivaTeamAPI.getAllVivaTeams(0, 100)
       ]);
@@ -1500,6 +1508,87 @@ const VivaOutcomeModal = ({ vivaTeam, onClose, onSave }) => {
             </button>
             <button type="submit" className="btn primary">
               Submit Outcome
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+
+// Change Password Modal Component
+const ChangePasswordModal = ({ show, onClose, onSubmit, formData, setFormData, loading, error, success }) => {
+  if (!show) return null;
+
+  return (
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Change Password</h3>
+          <button className="modal-close" onClick={onClose}>�</button>
+        </div>
+        
+        <form onSubmit={onSubmit}>
+          <div className="modal-body">
+            {error && (
+              <div className="alert alert-danger" style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#fee', color: '#c33', borderRadius: '4px' }}>
+                {error}
+              </div>
+            )}
+            
+            {success && (
+              <div className="alert alert-success" style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#efe', color: '#3c3', borderRadius: '4px' }}>
+                {success}
+              </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label">Current Password:</label>
+              <input
+                type="password"
+                className="form-input"
+                value={formData.current_password}
+                onChange={(e) => setFormData({...formData, current_password: e.target.value})}
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">New Password:</label>
+              <input
+                type="password"
+                className="form-input"
+                value={formData.new_password}
+                onChange={(e) => setFormData({...formData, new_password: e.target.value})}
+                required
+                disabled={loading}
+                minLength="6"
+              />
+              <small style={{ color: '#666', fontSize: '0.85rem' }}>Minimum 6 characters</small>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Confirm New Password:</label>
+              <input
+                type="password"
+                className="form-input"
+                value={formData.confirm_password}
+                onChange={(e) => setFormData({...formData, confirm_password: e.target.value})}
+                required
+                disabled={loading}
+                minLength="6"
+              />
+            </div>
+          </div>
+          
+          <div className="modal-footer">
+            <button type="button" className="btn secondary" onClick={onClose} disabled={loading}>
+              Cancel
+            </button>
+            <button type="submit" className="btn primary" disabled={loading}>
+              {loading ? 'Changing...' : 'Change Password'}
             </button>
           </div>
         </form>

@@ -1139,14 +1139,14 @@ const DosDashboard = () => {
       <div className="page-header">
         <h1 className="page-title">Student Management</h1>
         <p className="page-subtitle">Manage student records, programmes, and academic information</p>
-        <div className="header-actions">
+        {/* <div className="header-actions">
           <button 
             className="btn primary"
             onClick={() => setShowCreateStudentModal(true)}
           >
             ➕ Create Student
           </button>
-        </div>
+        </div> */}
       </div>
 
       {/* Search and Filter Section */}
