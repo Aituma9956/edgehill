@@ -2283,7 +2283,7 @@ const GbosAdminDashboard = () => {
                         className="btn btn-sm secondary"
                         title="View Details"
                       >
-                        👁️ View
+                        View
                       </button>
                     </td>
                   </tr>

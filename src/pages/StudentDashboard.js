@@ -1350,12 +1350,6 @@ const StudentDashboard = () => {
         
         {/* Main Content */}
         <div className="main-content">
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
-          
           {renderContent()}
         </div>
       </main>

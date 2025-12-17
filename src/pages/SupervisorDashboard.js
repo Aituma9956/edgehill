@@ -182,12 +182,36 @@ const SupervisorDashboard = () => {
     setSubmissionsLoading(true);
     setSubmissionsError('');
     try {
+      if (!user || !user.id) {
+        throw new Error('User ID not available');
+      }
+      
+      // Get supervisor's assigned students
+      const supervisorData = await supervisorAPI.getCurrentSupervisor(user);
+      const supervisorId = supervisorData.supervisor_id;
+      const assignments = await assignmentAPI.getSupervisorStudents(supervisorId);
+      
+      if (!assignments || assignments.length === 0) {
+        setSubmissions([]);
+        return;
+      }
+      
+      // Get student numbers for filtering
+      const studentNumbers = assignments.map(a => a.student_number);
+      
+      // Fetch all submissions
       const response = await submissionAPI.getSubmissions(
         submissionSearchTerm || null,
         submissionTypeFilter || null, 
         submissionStatusFilter || null
       );
-      setSubmissions(response || []);
+      
+      // Filter to only show submissions from supervisor's students
+      const filteredSubmissions = (response || []).filter(submission => 
+        studentNumbers.includes(submission.student_number)
+      );
+      
+      setSubmissions(filteredSubmissions);
     } catch (error) {
       console.error('Error fetching submissions:', error);
       setSubmissionsError(extractErrorMessage(error, 'Failed to fetch submissions'));
@@ -200,8 +224,32 @@ const SupervisorDashboard = () => {
     setVivaTeamsLoading(true);
     setVivaTeamsError('');
     try {
+      if (!user || !user.id) {
+        throw new Error('User ID not available');
+      }
+      
+      // Get supervisor's assigned students
+      const supervisorData = await supervisorAPI.getCurrentSupervisor(user);
+      const supervisorId = supervisorData.supervisor_id;
+      const assignments = await assignmentAPI.getSupervisorStudents(supervisorId);
+      
+      if (!assignments || assignments.length === 0) {
+        setVivaTeams([]);
+        return;
+      }
+      
+      // Get student numbers for filtering
+      const studentNumbers = assignments.map(a => a.student_number);
+      
+      // Fetch all viva teams
       const response = await vivaTeamAPI.getAllVivaTeams(0, 100, vivaTeamSearch, stageFilter, vivaTeamStatusFilter);
-      setVivaTeams(response || []);
+      
+      // Filter to only show viva teams for supervisor's students
+      const filteredVivaTeams = (response || []).filter(vivaTeam => 
+        studentNumbers.includes(vivaTeam.student_number)
+      );
+      
+      setVivaTeams(filteredVivaTeams);
     } catch (error) {
       console.error('Error fetching viva teams:', error);
       setVivaTeamsError(extractErrorMessage(error, 'Failed to fetch viva teams'));
@@ -214,8 +262,32 @@ const SupervisorDashboard = () => {
     setVivasLoading(true);
     setVivasError('');
     try {
+      if (!user || !user.id) {
+        throw new Error('User ID not available');
+      }
+      
+      // Get supervisor's assigned students
+      const supervisorData = await supervisorAPI.getCurrentSupervisor(user);
+      const supervisorId = supervisorData.supervisor_id;
+      const assignments = await assignmentAPI.getSupervisorStudents(supervisorId);
+      
+      if (!assignments || assignments.length === 0) {
+        setVivas([]);
+        return;
+      }
+      
+      // Get student numbers for filtering
+      const studentNumbers = assignments.map(a => a.student_number);
+      
+      // Fetch all vivas
       const response = await vivaAPI.getAllVivas(0, 100, vivaSearchTerm, vivaStageFilter);
-      setVivas(response || []);
+      
+      // Filter to only show vivas for supervisor's students
+      const filteredVivas = (response || []).filter(viva => 
+        studentNumbers.includes(viva.student_number)
+      );
+      
+      setVivas(filteredVivas);
     } catch (error) {
       console.error('Error fetching vivas:', error);
       setVivasError(extractErrorMessage(error, 'Failed to fetch vivas'));
@@ -999,7 +1071,7 @@ const SupervisorDashboard = () => {
                         className="btn btn-sm secondary"
                         title="View Details"
                       >
-                        👁️ View
+                        View
                       </button>
                     </td>
                   </tr>
@@ -1876,17 +1948,17 @@ const VivaDetailModal = ({ viva, onClose, onViewOutcomes, onViewVivaTeams, onVie
           </div>
         </div>
         
-        <div className="modal-footer">
-          <button type="button" className="btn secondary" onClick={onClose}>Close</button>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <button type="button" className="btn btn-sm success" onClick={onViewOutcomes}>
-              📊 Outcomes
+        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button type="button" className="btn btn-sm secondary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onClose}>Close</button>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <button type="button" className="btn btn-sm success" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onViewOutcomes}>
+              Outcomes
             </button>
-            <button type="button" className="btn btn-sm primary" onClick={onViewVivaTeams}>
-              🎯 Viva Teams
+            <button type="button" className="btn btn-sm primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onViewVivaTeams}>
+              Viva Teams
             </button>
-            <button type="button" className="btn btn-sm info" onClick={onViewSubmissions}>
-              📝 Submissions
+            <button type="button" className="btn btn-sm info" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onViewSubmissions}>
+              Submissions
             </button>
           </div>
         </div>

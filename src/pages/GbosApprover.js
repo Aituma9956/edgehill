@@ -755,7 +755,7 @@ const GbosApprover = () => {
                         className="btn btn-sm secondary"
                         title="View Details"
                       >
-                        👁️ View
+                        View
                       </button>
                     </td>
                   </tr>
@@ -1431,22 +1431,22 @@ const VivaDetailModal = ({ viva, onClose, onConfirm, onViewOutcomes, onViewVivaT
           </div>
         </div>
         
-        <div className="modal-footer">
-          <button type="button" className="btn secondary" onClick={onClose}>Close</button>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button type="button" className="btn btn-sm secondary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onClose}>Close</button>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
             {!viva.confirmation_viva_has_taken_place && (
-              <button type="button" className="btn btn-sm warning" onClick={onConfirm}>
-                ✅ Confirm
+              <button type="button" className="btn btn-sm warning" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onConfirm}>
+                Confirm
               </button>
             )}
-            <button type="button" className="btn btn-sm success" onClick={onViewOutcomes}>
-              📊 Outcomes
+            <button type="button" className="btn btn-sm success" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onViewOutcomes}>
+              Outcomes
             </button>
-            <button type="button" className="btn btn-sm primary" onClick={onViewVivaTeams}>
-              🎯 Viva Teams
+            <button type="button" className="btn btn-sm primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onViewVivaTeams}>
+              Viva Teams
             </button>
-            <button type="button" className="btn btn-sm info" onClick={onViewSubmissions}>
-              📝 Submissions
+            <button type="button" className="btn btn-sm info" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onViewSubmissions}>
+              Submissions
             </button>
           </div>
         </div>

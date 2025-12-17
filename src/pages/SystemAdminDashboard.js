@@ -2745,7 +2745,7 @@ const SystemAdminDashboard = () => {
                         className="btn btn-sm secondary"
                         title="View Details"
                       >
-                        👁️ View
+                        View
                       </button>
                     </td>
                   </tr>
@@ -6087,7 +6087,15 @@ const VivaScheduleModal = ({ vivaTeam, onClose, onSave }) => {
     try {
       setLoading(true);
       setError('');
-      await onSave(vivaTeam.team_id, formData.scheduledDate, formData.location);
+      
+      // Convert date from YYYY-MM-DD to DD/MM/YYYY format expected by API
+      const dateObj = new Date(formData.scheduledDate);
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const year = dateObj.getFullYear();
+      const formattedDate = `${day}/${month}/${year}`;
+      
+      await onSave(vivaTeam.id || vivaTeam.team_id, formattedDate, formData.location);
       onClose();
     } catch (error) {
       setError(extractErrorMessage(error, 'Failed to schedule viva'));
@@ -6097,50 +6105,76 @@ const VivaScheduleModal = ({ vivaTeam, onClose, onSave }) => {
   };
 
   return (
-    <div className="sys-admin-modal-overlay" onClick={onClose}>
-      <div className="sys-admin-modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="sys-admin-modal-header">
-          <h2>Schedule Viva</h2>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Schedule Viva</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
         
-        {error && <div className="error-message">{error}</div>}
-        
-        <div className="detail-content">
-          <p><strong>Team ID:</strong> {vivaTeam.team_id}</p>
-          <p><strong>Student:</strong> {vivaTeam.student_name}</p>
-          <p><strong>Research Title:</strong> {vivaTeam.research_title}</p>
+        <div className="modal-body">
+          {error && <div className="alert alert-error">{error}</div>}
+          
+          <div className="detail-section">
+            <h4 className="detail-section-title">Viva Team Information</h4>
+            <div className="detail-row">
+              <span className="detail-label">Team ID:</span>
+              <span className="detail-value">#{vivaTeam.id || vivaTeam.team_id}</span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Student Number:</span>
+              <span className="detail-value">{vivaTeam.student_number}</span>
+            </div>
+            {vivaTeam.student_name && (
+              <div className="detail-row">
+                <span className="detail-label">Student Name:</span>
+                <span className="detail-value">{vivaTeam.student_name}</span>
+              </div>
+            )}
+            <div className="detail-row">
+              <span className="detail-label">Stage:</span>
+              <span className="detail-value">{vivaTeam.stage?.charAt(0).toUpperCase() + vivaTeam.stage?.slice(1)}</span>
+            </div>
+          </div>
+          
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label">Scheduled Date *</label>
+              <input
+                type="date"
+                className="form-input"
+                value={formData.scheduledDate}
+                onChange={(e) => setFormData({...formData, scheduledDate: e.target.value})}
+                required
+              />
+              <small className="form-help">Select the date for the viva examination</small>
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Location *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.location}
+                onChange={(e) => setFormData({...formData, location: e.target.value})}
+                placeholder="e.g., Room S5, Building A"
+                required
+              />
+              <small className="form-help">Enter the venue for the viva examination</small>
+            </div>
+          </form>
         </div>
         
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Scheduled Date:</label>
-            <input
-              type="datetime-local"
-              value={formData.scheduledDate}
-              onChange={(e) => setFormData({...formData, scheduledDate: e.target.value})}
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Location:</label>
-            <input
-              type="text"
-              value={formData.location}
-              onChange={(e) => setFormData({...formData, location: e.target.value})}
-              placeholder="e.g., Room 101, Building A"
-              required
-            />
-          </div>
-          
-          <div className="sys-admin-modal-actions">
-            <button type="button" onClick={onClose}>Cancel</button>
-            <button type="submit" disabled={loading}>
-              {loading ? 'Scheduling...' : 'Schedule Viva'}
-            </button>
-          </div>
-        </form>
+        <div className="modal-footer">
+          <button type="button" className="btn secondary" onClick={onClose} disabled={loading}>
+            Cancel
+          </button>
+          <button type="submit" className="btn primary" onClick={handleSubmit} disabled={loading}>
+            {loading ? 'Scheduling...' : 'Schedule Viva'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -6966,30 +7000,30 @@ const VivaDetailModal = ({ viva, onClose, onEdit, onConfirm, onCompleteOrganizat
           </div>
         </div>
         
-        <div className="modal-footer">
-          <button type="button" className="btn secondary" onClick={onClose}>Close</button>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <button type="button" className="btn btn-sm primary" onClick={onEdit}>
-              ✏️ Edit
+        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button type="button" className="btn btn-sm secondary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onClose}>Close</button>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <button type="button" className="btn btn-sm primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onEdit}>
+              Edit
             </button>
             {!viva.confirmation_viva_has_taken_place && (
-              <button type="button" className="btn btn-sm warning" onClick={onConfirm}>
-                ✅ Confirm
+              <button type="button" className="btn btn-sm warning" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onConfirm}>
+                Confirm
               </button>
             )}
             {!viva.organisation_process_completed && (
-              <button type="button" className="btn btn-sm info" onClick={onCompleteOrganization}>
-                📋 Complete
+              <button type="button" className="btn btn-sm info" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onCompleteOrganization}>
+                Complete
               </button>
             )}
-            <button type="button" className="btn btn-sm success" onClick={onViewOutcomes}>
-              📊 Outcomes
+            <button type="button" className="btn btn-sm success" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onViewOutcomes}>
+              Outcomes
             </button>
-            <button type="button" className="btn btn-sm primary" onClick={onViewVivaTeams}>
-              🎯 Viva Teams
+            <button type="button" className="btn btn-sm primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onViewVivaTeams}>
+              Viva Teams
             </button>
-            <button type="button" className="btn btn-sm info" onClick={onViewSubmissions}>
-              📝 Submissions
+            <button type="button" className="btn btn-sm info" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={onViewSubmissions}>
+              Submissions
             </button>
           </div>
         </div>
