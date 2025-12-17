@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { studentAPI, submissionAPI, vivaTeamAPI, assignmentAPI } from '../utils/api';
+import { studentAPI, submissionAPI, vivaTeamAPI, assignmentAPI, supervisorAPI, vivaAPI } from '../utils/api';
 import '../styles/shared-dashboard.css';
 import logo from '../image/logo.png';
 
@@ -62,6 +62,22 @@ const SupervisorDashboard = () => {
   const [stageFilter, setStageFilter] = useState('');
   const [vivaTeamStatusFilter, setVivaTeamStatusFilter] = useState('');
   
+  // Viva management state
+  const [vivas, setVivas] = useState([]);
+  const [vivasLoading, setVivasLoading] = useState(false);
+  const [vivasError, setVivasError] = useState('');
+  const [selectedViva, setSelectedViva] = useState(null);
+  const [showVivaDetailModal, setShowVivaDetailModal] = useState(false);
+  const [showVivaModal, setShowVivaModal] = useState(false);
+  const [vivaSearchTerm, setVivaSearchTerm] = useState('');
+  const [vivaStageFilter, setVivaStageFilter] = useState('');
+  const [studentVivaTeams, setStudentVivaTeams] = useState([]);
+  const [showStudentVivaTeamsModal, setShowStudentVivaTeamsModal] = useState(false);
+  const [studentSubmissions, setStudentSubmissions] = useState([]);
+  const [showStudentSubmissionsModal, setShowStudentSubmissionsModal] = useState(false);
+  const [vivaOutcomes, setVivaOutcomes] = useState([]);
+  const [showVivaOutcomeModal, setShowVivaOutcomeModal] = useState(false);
+  
   // Dropdown for actions
   const [openDropdown, setOpenDropdown] = useState(null);
 
@@ -79,6 +95,7 @@ const SupervisorDashboard = () => {
     { id: 'students', label: 'My Students', icon: '🎓', iconClass: 'fas fa-user-graduate' },
     { id: 'submissions', label: 'Submissions', icon: '📄', iconClass: 'fas fa-file-upload' },
     { id: 'viva-teams', label: 'Viva Teams', icon: '🎯', iconClass: 'fas fa-bullseye' },
+    { id: 'viva', label: 'Viva', icon: '🎓', iconClass: 'fas fa-graduation-cap' },
   ];
 
   useEffect(() => {
@@ -92,6 +109,8 @@ const SupervisorDashboard = () => {
       fetchSubmissions();
     } else if (activeSection === 'viva-teams') {
       fetchVivaTeams();
+    } else if (activeSection === 'viva') {
+      fetchVivas();
     }
   }, [activeSection, user]);
 
@@ -105,7 +124,7 @@ const SupervisorDashboard = () => {
       }
       
       // First, get the supervisor record to find supervisor_id
-      const supervisorData = await studentAPI.getSupervisorByUserId(user.id);
+      const supervisorData = await supervisorAPI.getCurrentSupervisor(user);
       const supervisorId = supervisorData.supervisor_id;
       
       // Get assigned students for this supervisor
@@ -191,6 +210,20 @@ const SupervisorDashboard = () => {
     }
   };
 
+  const fetchVivas = async () => {
+    setVivasLoading(true);
+    setVivasError('');
+    try {
+      const response = await vivaAPI.getAllVivas(0, 100, vivaSearchTerm, vivaStageFilter);
+      setVivas(response || []);
+    } catch (error) {
+      console.error('Error fetching vivas:', error);
+      setVivasError(extractErrorMessage(error, 'Failed to fetch vivas'));
+    } finally {
+      setVivasLoading(false);
+    }
+  };
+
   const fetchDashboardData = async () => {
     try {
       if (!user || !user.id) {
@@ -199,7 +232,7 @@ const SupervisorDashboard = () => {
       }
       
       // First, get the supervisor record to find supervisor_id
-      const supervisorData = await studentAPI.getCurrentSupervisor(user);
+      const supervisorData = await supervisorAPI.getCurrentSupervisor(user);
       const supervisorId = supervisorData.supervisor_id;
       
       const [assignedStudentsResponse, submissionsResponse, vivaTeamsResponse] = await Promise.all([
@@ -219,12 +252,19 @@ const SupervisorDashboard = () => {
 
       setStats({
         totalStudents: assignedStudentsResponse?.length || 0,
-        activeSubmissions: supervisorSubmissions?.filter(s => s.status === 'submitted')?.length || 0,
+        activeSubmissions: supervisorSubmissions?.filter(s => s.status?.toUpperCase() === 'SUBMITTED')?.length || 0,
         pendingVivaTeams: supervisorVivaTeams?.filter(vt => vt.status === 'proposed')?.length || 0,
         approvedVivaTeams: supervisorVivaTeams?.filter(vt => vt.status === 'approved')?.length || 0
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      // Set stats to 0 on error so UI shows something
+      setStats({
+        totalStudents: 0,
+        activeSubmissions: 0,
+        pendingVivaTeams: 0,
+        approvedVivaTeams: 0
+      });
     }
   };
 
@@ -837,6 +877,147 @@ const SupervisorDashboard = () => {
     </div>
   );
 
+  const renderVivas = () => (
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Viva Management</h1>
+        <p className="page-subtitle">View vivas for your students</p>
+      </div>
+
+      {/* Search Section */}
+      <div className="search-filter-section">
+        <div className="form-group">
+          <label className="form-label">Search by Student Number</label>
+          <input
+            type="text"
+            placeholder="Enter student number..."
+            value={vivaSearchTerm}
+            onChange={(e) => setVivaSearchTerm(e.target.value)}
+            className="form-input"
+          />
+        </div>
+        <div className="form-group button-shift">
+          <button 
+            onClick={fetchVivas} 
+            className="btn secondary"
+          >
+            🔍 Search
+          </button>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Filter by Stage</label>
+          <select
+            value={vivaStageFilter}
+            onChange={(e) => setVivaStageFilter(e.target.value)}
+            className="form-input"
+          >
+            <option value="">All Stages</option>
+            <option value="registration">Registration</option>
+            <option value="progression">Progression</option>
+            <option value="final">Final</option>
+          </select>
+        </div>
+      </div>
+
+      {vivasError && (
+        <div className="alert alert-error">
+          <div className="alert-icon">⚠️</div>
+          <div className="alert-content">{vivasError}</div>
+        </div>
+      )}
+
+      {/* Vivas Table */}
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Vivas</h2>
+          <span className="card-subtitle">{Array.isArray(vivas) ? vivas.length : 0} vivas found</span>
+        </div>
+        {vivasLoading ? (
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Loading vivas...</div>
+          </div>
+        ) : (
+          <div className="table-scroll">
+            <table className="dashboard-table">
+              <thead>
+                <tr>
+                  <th>Viva ID</th>
+                  <th>Student Number</th>
+                  <th>Stage & Type</th>
+                  <th>Date & Time</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.isArray(vivas) && vivas.length > 0 ? vivas.map(viva => (
+                  <tr key={viva.viva_id}>
+                    <td><strong>#{viva.viva_id}</strong></td>
+                    <td>{viva.student_number}</td>
+                    <td>
+                      <div className="stage-type-info">
+                        <span className={`status-badge stage-${viva.stage}`}>
+                          {viva.stage?.charAt(0).toUpperCase() + viva.stage?.slice(1)}
+                        </span>
+                        <span className={`status-badge viva-type-${viva.viva_type}`}>
+                          {viva.viva_type?.charAt(0).toUpperCase() + viva.viva_type?.slice(1)}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="datetime-info">
+                        <div className="date-info">
+                          <strong>📅</strong> {viva.date_of_viva ? new Date(viva.date_of_viva).toLocaleDateString() : 'Not set'}
+                        </div>
+                        <div className="time-info">
+                          <strong>🕐</strong> {viva.time_of_viva || 'Not set'}
+                        </div>
+                      </div>
+                    </td>
+                    <td>{viva.location_of_viva || 'TBD'}</td>
+                    <td>
+                      <div className="status-info-group">
+                        {viva.confirmation_viva_has_taken_place ? (
+                          <span className="status-badge confirmed">✅ Confirmed</span>
+                        ) : (
+                          <span className="status-badge pending">⏳ Pending</span>
+                        )}
+                        {viva.organisation_process_completed && (
+                          <span className="status-badge organized">📋 Organized</span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => {
+                          setSelectedViva(viva);
+                          setShowVivaDetailModal(true);
+                        }}
+                        className="btn btn-sm secondary"
+                        title="View Details"
+                      >
+                        👁️ View
+                      </button>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>
+                      No vivas found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
@@ -847,6 +1028,8 @@ const SupervisorDashboard = () => {
         return renderSubmissions();
       case 'viva-teams':
         return renderVivaTeams();
+      case 'viva':
+        return renderVivas();
       default:
         return renderDashboard();
     }
@@ -1023,6 +1206,76 @@ const SupervisorDashboard = () => {
             setSelectedVivaTeam(null);
           }}
           onSave={handleSubmitVivaOutcome}
+        />
+      )}
+
+      {showVivaDetailModal && selectedViva && (
+        <VivaDetailModal
+          viva={selectedViva}
+          onClose={() => {
+            setShowVivaDetailModal(false);
+            setSelectedViva(null);
+          }}
+          onViewOutcomes={async () => {
+            try {
+              const outcomes = await vivaAPI.getVivaOutcomes(selectedViva.viva_id);
+              setVivaOutcomes(outcomes);
+              setShowVivaOutcomeModal(true);
+            } catch (error) {
+              alert('Failed to fetch outcomes: ' + extractErrorMessage(error, 'Unknown error'));
+            }
+          }}
+          onViewVivaTeams={async () => {
+            try {
+              const teams = await vivaTeamAPI.getAllVivaTeams(0, 100, selectedViva.student_number);
+              setStudentVivaTeams(teams);
+              setShowStudentVivaTeamsModal(true);
+            } catch (error) {
+              alert('Failed to fetch viva teams: ' + extractErrorMessage(error, 'Unknown error'));
+            }
+          }}
+          onViewSubmissions={async () => {
+            try {
+              const submissions = await submissionAPI.getSubmissions(0, 100, selectedViva.student_number);
+              setStudentSubmissions(submissions);
+              setShowStudentSubmissionsModal(true);
+            } catch (error) {
+              alert('Failed to fetch submissions: ' + extractErrorMessage(error, 'Unknown error'));
+            }
+          }}
+        />
+      )}
+
+      {showStudentVivaTeamsModal && selectedViva && (
+        <StudentVivaTeamsModal
+          studentNumber={selectedViva.student_number}
+          vivaTeams={studentVivaTeams}
+          onClose={() => {
+            setShowStudentVivaTeamsModal(false);
+            setStudentVivaTeams([]);
+          }}
+        />
+      )}
+
+      {showStudentSubmissionsModal && selectedViva && (
+        <StudentSubmissionsModal
+          studentNumber={selectedViva.student_number}
+          submissions={studentSubmissions}
+          onClose={() => {
+            setShowStudentSubmissionsModal(false);
+            setStudentSubmissions([]);
+          }}
+        />
+      )}
+
+      {showVivaOutcomeModal && selectedViva && (
+        <VivaOutcomesModal
+          viva={selectedViva}
+          outcomes={vivaOutcomes}
+          onClose={() => {
+            setShowVivaOutcomeModal(false);
+            setVivaOutcomes([]);
+          }}
         />
       )}
     </div>
@@ -1511,6 +1764,344 @@ const VivaOutcomeModal = ({ vivaTeam, onClose, onSave }) => {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+// Viva Detail Modal Component
+const VivaDetailModal = ({ viva, onClose, onViewOutcomes, onViewVivaTeams, onViewSubmissions }) => {
+  return (
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal-content large" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Viva Details - #{viva.viva_id}</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          <div className="detail-section">
+            <h4 className="detail-section-title">Basic Information</h4>
+            <div className="detail-row">
+              <span className="detail-label">Viva ID:</span>
+              <span className="detail-value">#{viva.viva_id}</span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Student Number:</span>
+              <span className="detail-value">{viva.student_number}</span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Stage:</span>
+              <span className={`status-badge stage-${viva.stage}`}>
+                {viva.stage?.charAt(0).toUpperCase() + viva.stage?.slice(1) || 'N/A'}
+              </span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Viva Type:</span>
+              <span className={`status-badge viva-type-${viva.viva_type}`}>
+                {viva.viva_type?.charAt(0).toUpperCase() + viva.viva_type?.slice(1) || 'N/A'}
+              </span>
+            </div>
+          </div>
+
+          <div className="detail-section">
+            <h4 className="detail-section-title">Schedule</h4>
+            <div className="detail-row">
+              <span className="detail-label">Date of Viva:</span>
+              <span className="detail-value">
+                {viva.date_of_viva ? new Date(viva.date_of_viva).toLocaleDateString() : 'Not set'}
+              </span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Time of Viva:</span>
+              <span className="detail-value">{viva.time_of_viva || 'Not set'}</span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Location:</span>
+              <span className="detail-value">{viva.location_of_viva || 'Not set'}</span>
+            </div>
+          </div>
+
+          <div className="detail-section">
+            <h4 className="detail-section-title">Confirmations</h4>
+            <div className="detail-row">
+              <span className="detail-label">Date Confirmed to Examiners:</span>
+              <span className="detail-value">
+                {viva.date_confirmed_to_examiners ? new Date(viva.date_confirmed_to_examiners).toLocaleDateString() : 'Not confirmed'}
+              </span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Date Confirmed to PGR:</span>
+              <span className="detail-value">
+                {viva.date_confirmed_to_pgr ? new Date(viva.date_confirmed_to_pgr).toLocaleDateString() : 'Not confirmed'}
+              </span>
+            </div>
+          </div>
+
+          <div className="detail-section">
+            <h4 className="detail-section-title">Status</h4>
+            <div className="detail-row">
+              <span className="detail-label">Organization Process:</span>
+              <span className={`status-badge ${viva.organisation_process_completed ? 'confirmed' : 'pending'}`}>
+                {viva.organisation_process_completed ? '✅ Completed' : '⏳ Pending'}
+              </span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">Viva Status:</span>
+              <span className={`status-badge ${viva.confirmation_viva_has_taken_place ? 'confirmed' : 'pending'}`}>
+                {viva.confirmation_viva_has_taken_place ? '✅ Taken Place' : '⏳ Not Confirmed'}
+              </span>
+            </div>
+          </div>
+
+          {viva.viva_notes && (
+            <div className="detail-section">
+              <h4 className="detail-section-title">Notes</h4>
+              <div className="detail-notes">
+                {viva.viva_notes}
+              </div>
+            </div>
+          )}
+
+          <div className="detail-section">
+            <h4 className="detail-section-title">Timestamps</h4>
+            <div className="detail-row">
+              <span className="detail-label">Created:</span>
+              <span className="detail-value">
+                {viva.created_date ? new Date(viva.created_date).toLocaleString() : 'N/A'}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="modal-footer">
+          <button type="button" className="btn secondary" onClick={onClose}>Close</button>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button type="button" className="btn btn-sm success" onClick={onViewOutcomes}>
+              📊 Outcomes
+            </button>
+            <button type="button" className="btn btn-sm primary" onClick={onViewVivaTeams}>
+              🎯 Viva Teams
+            </button>
+            <button type="button" className="btn btn-sm info" onClick={onViewSubmissions}>
+              📝 Submissions
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Student Viva Teams Modal Component
+const StudentVivaTeamsModal = ({ studentNumber, vivaTeams, onClose }) => {
+  return (
+    <div className="modal-overlay show">
+      <div className="modal-content large">
+        <div className="modal-header">
+          <h2 className="modal-title">Viva Teams for {studentNumber}</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        <div className="modal-body">
+          {vivaTeams.length === 0 ? (
+            <div className="empty-state">
+              <p>No viva teams found for this student.</p>
+            </div>
+          ) : (
+            <div className="table-scroll">
+              <table className="dashboard-table">
+                <thead>
+                  <tr>
+                    <th>Viva Team ID</th>
+                    <th>Examiner Type</th>
+                    <th>Examiner Name</th>
+                    <th>Examiner Email</th>
+                    <th>Outcome</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vivaTeams.map((team) => (
+                    <tr key={team.id}>
+                      <td>{team.viva_id}</td>
+                      <td>{team.examiner_type}</td>
+                      <td>{team.examiner_name}</td>
+                      <td>{team.examiner_email}</td>
+                      <td>{team.outcome || 'N/A'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn secondary" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Student Submissions Modal Component
+const StudentSubmissionsModal = ({ studentNumber, submissions, onClose }) => {
+  return (
+    <div className="modal-overlay show">
+      <div className="modal-content large">
+        <div className="modal-header">
+          <h2 className="modal-title">Submissions for {studentNumber}</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        <div className="modal-body">
+          {submissions.length === 0 ? (
+            <div className="empty-state">
+              <p>No submissions found for this student.</p>
+            </div>
+          ) : (
+            <div className="table-scroll">
+              <table className="dashboard-table">
+                <thead>
+                  <tr>
+                    <th>Submission ID</th>
+                    <th>Title</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Date Expected</th>
+                    <th>Date Received</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {submissions.map((submission) => (
+                    <tr key={submission.submission_id}>
+                      <td>{submission.submission_id}</td>
+                      <td>{submission.title}</td>
+                      <td>{submission.submission_type}</td>
+                      <td>{submission.status}</td>
+                      <td>
+                        {submission.date_expected 
+                          ? new Date(submission.date_expected).toLocaleDateString() 
+                          : 'N/A'}
+                      </td>
+                      <td>
+                        {submission.date_received 
+                          ? new Date(submission.date_received).toLocaleDateString() 
+                          : 'N/A'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn secondary" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Viva Outcomes Modal Component
+const VivaOutcomesModal = ({ viva, outcomes, onClose }) => {
+  return (
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal-content extra-large" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Viva Outcomes - Viva #{viva.viva_id}</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          <div className="outcomes-header">
+            <h4>Student: {viva.student_number}</h4>
+          </div>
+
+          {outcomes && outcomes.length > 0 ? (
+            <div className="outcomes-list">
+              {outcomes.map((outcome, index) => (
+                <div key={outcome.outcome_id} className="outcome-card">
+                  <div className="outcome-header">
+                    <h5>Outcome #{index + 1} (ID: {outcome.outcome_id})</h5>
+                  </div>
+                  <div className="outcome-details">
+                    <div className="detail-row">
+                      <span className="detail-label">Initial Outcome:</span>
+                      <span className="detail-value">{outcome.initial_outcome || 'N/A'}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">GSBOS Outcome:</span>
+                      <span className="detail-value">{outcome.gsbos_outcome || 'N/A'}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Resubmission Required:</span>
+                      <span className={`status-badge ${outcome.resubmission_required ? 'warning' : 'confirmed'}`}>
+                        {outcome.resubmission_required ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Amendments Received:</span>
+                      <span className="detail-value">
+                        {outcome.date_specification_of_amendments_received 
+                          ? new Date(outcome.date_specification_of_amendments_received).toLocaleDateString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Chair's Report:</span>
+                      <span className="detail-value">
+                        {outcome.date_chairs_report_received 
+                          ? new Date(outcome.date_chairs_report_received).toLocaleDateString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Paperwork Considered by GSBOS:</span>
+                      <span className="detail-value">
+                        {outcome.date_paperwork_considered_by_gsbos 
+                          ? new Date(outcome.date_paperwork_considered_by_gsbos).toLocaleDateString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Outcome Sent to PGR:</span>
+                      <span className="detail-value">
+                        {outcome.date_outcome_sent_to_pgr 
+                          ? new Date(outcome.date_outcome_sent_to_pgr).toLocaleDateString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    {outcome.outcome_notes && (
+                      <div className="detail-row">
+                        <span className="detail-label">Notes:</span>
+                        <span className="detail-value">{outcome.outcome_notes}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>No outcomes recorded for this viva yet.</p>
+            </div>
+          )}
+        </div>
+        
+        <div className="modal-footer">
+          <button type="button" className="btn secondary" onClick={onClose}>Close</button>
+        </div>
       </div>
     </div>
   );

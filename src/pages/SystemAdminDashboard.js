@@ -44,6 +44,7 @@ const SystemAdminDashboard = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showUserDetailModal, setShowUserDetailModal] = useState(false);
   const [showUserByIdModal, setShowUserByIdModal] = useState(false);
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [userIdSearch, setUserIdSearch] = useState('');
   const [searchedUser, setSearchedUser] = useState(null);
   const [searchingById, setSearchingById] = useState(false);
@@ -397,6 +398,17 @@ const SystemAdminDashboard = () => {
       }
     } catch (error) {
       console.error('Error searching user by ID:', error);
+    }
+  };
+
+  const handleCreateUser = async (userData) => {
+    try {
+      await authAPI.register(userData);
+      fetchUsers(); // Refresh list
+      setShowCreateUserModal(false);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
     }
   };
 
@@ -1113,6 +1125,14 @@ const SystemAdminDashboard = () => {
       <div className="page-header">
         <h1 className="page-title">User Management</h1>
         <p className="page-subtitle">Manage system users, roles, and permissions</p>
+        <div className="header-actions">
+          <button 
+            className="btn primary"
+            onClick={() => setShowCreateUserModal(true)}
+          >
+            ➕ Create User
+          </button>
+        </div>
       </div>
 
       {/* Search Section */}
@@ -2996,6 +3016,13 @@ const SystemAdminDashboard = () => {
       </main>
 
       {/* User Management Modals */}
+      {showCreateUserModal && (
+        <CreateUserModal
+          onClose={() => setShowCreateUserModal(false)}
+          onSave={handleCreateUser}
+        />
+      )}
+
       {showUserModal && selectedUser && (
         <UserEditModal
           user={selectedUser}
@@ -3307,6 +3334,156 @@ const SystemAdminDashboard = () => {
 };
 
 // Modal Components
+const CreateUserModal = ({ onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    first_name: '',
+    last_name: '',
+    department: '',
+    role: 'student'
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      await onSave(formData);
+    } catch (error) {
+      setError(extractErrorMessage(error, 'Failed to create user'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Create New User</h3>
+          <button className="modal-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          {error && <div className="error-message">{error}</div>}
+          
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label className="form-label">Username: *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.username}
+                onChange={(e) => setFormData({...formData, username: e.target.value})}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Email: *</label>
+              <input
+                type="email"
+                className="form-input"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Password: *</label>
+              <input
+                type="password"
+                className="form-input"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                required
+                minLength={6}
+                placeholder="Minimum 6 characters"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">First Name: *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.first_name}
+                onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Last Name: *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.last_name}
+                onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Department:</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.department}
+                onChange={(e) => setFormData({...formData, department: e.target.value})}
+                placeholder="Optional"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Role: *</label>
+              <select
+                className="form-input"
+                value={formData.role}
+                onChange={(e) => setFormData({...formData, role: e.target.value})}
+                required
+              >
+                <option value="student">Student</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="academic_admin">Academic Admin</option>
+                <option value="gbos_admin">GBOS Admin</option>
+                <option value="gbos_approver">GBOS Approver</option>
+                <option value="dos">DOS</option>
+                <option value="system_admin">System Admin</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        
+        <div className="modal-footer">
+          <button type="button" className="btn secondary" onClick={onClose}>Cancel</button>
+          <button 
+            type="submit" 
+            className="btn primary" 
+            disabled={loading}
+            onClick={handleSubmit}
+          >
+            {loading ? 'Creating...' : 'Create User'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const UserEditModal = ({ user, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     username: user?.username || '',
@@ -6840,37 +7017,39 @@ const StudentSubmissionsModal = ({ studentNumber, submissions, onClose }) => {
                 <thead>
                   <tr>
                     <th>Submission ID</th>
+                    <th>Title</th>
                     <th>Type</th>
-                    <th>Stage</th>
                     <th>Status</th>
-                    <th>Submitted Date</th>
-                    <th>Reviewed Date</th>
+                    <th>Date Expected</th>
+                    <th>Date Received</th>
+                    <th>Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   {submissions.map(submission => (
-                    <tr key={submission.id}>
-                      <td><strong>#{submission.id}</strong></td>
+                    <tr key={submission.submission_id}>
+                      <td><strong>#{submission.submission_id}</strong></td>
+                      <td>{submission.title || 'N/A'}</td>
                       <td>
                         <span className={`status-badge type-${submission.submission_type}`}>
-                          {submission.submission_type?.charAt(0).toUpperCase() + submission.submission_type?.slice(1) || 'N/A'}
+                          {submission.submission_type?.replace('_', ' ').toUpperCase() || 'N/A'}
                         </span>
                       </td>
                       <td>
-                        <span className={`status-badge stage-${submission.stage}`}>
-                          {submission.stage?.charAt(0).toUpperCase() + submission.stage?.slice(1) || 'N/A'}
+                        <span className={`status-badge ${submission.status?.toLowerCase()}`}>
+                          {submission.status?.charAt(0).toUpperCase() + submission.status?.slice(1).toLowerCase() || 'N/A'}
                         </span>
                       </td>
                       <td>
-                        <span className={`status-badge ${submission.status}`}>
-                          {submission.status?.charAt(0).toUpperCase() + submission.status?.slice(1) || 'N/A'}
-                        </span>
+                        {submission.date_expected ? new Date(submission.date_expected).toLocaleDateString() : 'N/A'}
                       </td>
                       <td>
-                        {submission.submission_date ? new Date(submission.submission_date).toLocaleDateString() : 'N/A'}
+                        {submission.date_received ? new Date(submission.date_received).toLocaleDateString() : 'Not received'}
                       </td>
                       <td>
-                        {submission.reviewed_date ? new Date(submission.reviewed_date).toLocaleDateString() : 'Not reviewed'}
+                        <div style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {submission.description || 'N/A'}
+                        </div>
                       </td>
                     </tr>
                   ))}

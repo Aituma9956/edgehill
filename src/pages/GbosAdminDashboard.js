@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { adminAPI, authAPI, studentAPI, supervisorAPI, assignmentAPI, registrationAPI, vivaTeamAPI, submissionAPI } from '../utils/api';
+import { adminAPI, authAPI, studentAPI, supervisorAPI, assignmentAPI, registrationAPI, vivaTeamAPI, submissionAPI, vivaAPI } from '../utils/api';
 import { appraisalAPI } from '../utils/api';
 import '../styles/shared-dashboard.css';
 import logo from '../image/logo.png';
@@ -150,9 +150,27 @@ const GbosAdminDashboard = () => {
     { id: 'assignments', label: 'Assignments', icon: '📋', iconClass: 'fas fa-clipboard-list' },
     { id: 'submissions', label: 'Submissions', icon: '📄', iconClass: 'fas fa-file-upload' },
     { id: 'viva-teams', label: 'Viva Teams', icon: '🎯', iconClass: 'fas fa-bullseye' },
+    { id: 'viva', label: 'Viva', icon: '🎓', iconClass: 'fas fa-graduation-cap' },
     { id: 'appraisals', label: 'Appraisals', icon: '📑', iconClass: 'fas fa-file-signature' },
     { id: 'profile', label: 'Profile', icon: '⚙️', iconClass: 'fas fa-cog' }
   ];
+  
+  // Viva management state
+  const [vivas, setVivas] = useState([]);
+  const [vivasLoading, setVivasLoading] = useState(false);
+  const [vivasError, setVivasError] = useState('');
+  const [selectedViva, setSelectedViva] = useState(null);
+  const [showVivaDetailModal, setShowVivaDetailModal] = useState(false);
+  const [showVivaModal, setShowVivaModal] = useState(false);
+  const [vivaSearchTerm, setVivaSearchTerm] = useState('');
+  const [vivaStageFilter, setVivaStageFilter] = useState('');
+  const [studentVivaTeams, setStudentVivaTeams] = useState([]);
+  const [showStudentVivaTeamsModal, setShowStudentVivaTeamsModal] = useState(false);
+  const [studentSubmissions, setStudentSubmissions] = useState([]);
+  const [showStudentSubmissionsModal, setShowStudentSubmissionsModal] = useState(false);
+  const [vivaOutcomes, setVivaOutcomes] = useState([]);
+  const [showVivaOutcomeModal, setShowVivaOutcomeModal] = useState(false);
+  
   // Appraisal management state
   const [showCreateAppraisalModal, setShowCreateAppraisalModal] = useState(false);
   const [newAppraisal, setNewAppraisal] = useState({
@@ -353,6 +371,8 @@ const GbosAdminDashboard = () => {
       fetchRegistrations();
     } else if (activeSection === 'viva-teams') {
       fetchVivaTeams();
+    } else if (activeSection === 'viva') {
+      fetchVivas();
     } else if (activeSection === 'submissions') {
       fetchSubmissions();
     } else if (activeSection === 'dashboard') {
@@ -461,6 +481,21 @@ const GbosAdminDashboard = () => {
       setVivaTeamsError(`Failed to fetch viva teams: ${extractErrorMessage(error, 'Failed to fetch viva teams')}`);
     } finally {
       setVivaTeamsLoading(false);
+    }
+  };
+
+  const fetchVivas = async () => {
+    try {
+      setVivasLoading(true);
+      setVivasError('');
+      
+      const data = await vivaAPI.getAllVivas(0, 100, vivaSearchTerm, vivaStageFilter);
+      setVivas(data);
+    } catch (error) {
+      console.error('Error fetching vivas:', error);
+      setVivasError(`Failed to fetch vivas: ${extractErrorMessage(error, 'Failed to fetch vivas')}`);
+    } finally {
+      setVivasLoading(false);
     }
   };
 
@@ -2126,6 +2161,147 @@ const GbosAdminDashboard = () => {
     </div>
   );
 
+  const renderVivaManagement = () => (
+    <div className="main-content">
+      {/* Page Header */}
+      <div className="page-header">
+        <h1 className="page-title">Viva Management</h1>
+        <p className="page-subtitle">Manage vivas, schedules, and outcomes for students</p>
+      </div>
+
+      {/* Search Section */}
+      <div className="search-filter-section">
+        <div className="form-group">
+          <label className="form-label">Search by Student Number</label>
+          <input
+            type="text"
+            placeholder="Enter student number..."
+            value={vivaSearchTerm}
+            onChange={(e) => setVivaSearchTerm(e.target.value)}
+            className="form-input"
+          />
+        </div>
+        <div className="form-group button-shift">
+          <button 
+            onClick={fetchVivas} 
+            className="btn secondary"
+          >
+            🔍 Search
+          </button>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Filter by Stage</label>
+          <select
+            value={vivaStageFilter}
+            onChange={(e) => setVivaStageFilter(e.target.value)}
+            className="form-input"
+          >
+            <option value="">All Stages</option>
+            <option value="registration">Registration</option>
+            <option value="progression">Progression</option>
+            <option value="final">Final</option>
+          </select>
+        </div>
+      </div>
+
+      {vivasError && (
+        <div className="alert alert-error">
+          <div className="alert-icon">⚠️</div>
+          <div className="alert-content">{vivasError}</div>
+        </div>
+      )}
+
+      {/* Vivas Table */}
+      <div className="dashboard-card">
+        <div className="card-header">
+          <h2 className="card-title">Vivas</h2>
+          <span className="card-subtitle">{Array.isArray(vivas) ? vivas.length : 0} vivas found</span>
+        </div>
+        {vivasLoading ? (
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Loading vivas...</div>
+          </div>
+        ) : (
+          <div className="table-scroll">
+            <table className="dashboard-table">
+              <thead>
+                <tr>
+                  <th>Viva ID</th>
+                  <th>Student Number</th>
+                  <th>Stage & Type</th>
+                  <th>Date & Time</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.isArray(vivas) && vivas.length > 0 ? vivas.map(viva => (
+                  <tr key={viva.viva_id}>
+                    <td><strong>#{viva.viva_id}</strong></td>
+                    <td>{viva.student_number}</td>
+                    <td>
+                      <div className="stage-type-info">
+                        <span className={`status-badge stage-${viva.stage}`}>
+                          {viva.stage.charAt(0).toUpperCase() + viva.stage.slice(1)}
+                        </span>
+                        <span className={`status-badge viva-type-${viva.viva_type}`}>
+                          {viva.viva_type.charAt(0).toUpperCase() + viva.viva_type.slice(1)}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="datetime-info">
+                        <div className="date-info">
+                          <strong>📅</strong> {viva.date_of_viva ? new Date(viva.date_of_viva).toLocaleDateString() : 'Not set'}
+                        </div>
+                        <div className="time-info">
+                          <strong>🕐</strong> {viva.time_of_viva || 'Not set'}
+                        </div>
+                      </div>
+                    </td>
+                    <td>{viva.location_of_viva || 'TBD'}</td>
+                    <td>
+                      <div className="status-info-group">
+                        {viva.confirmation_viva_has_taken_place ? (
+                          <span className="status-badge confirmed">✅ Confirmed</span>
+                        ) : (
+                          <span className="status-badge pending">⏳ Pending</span>
+                        )}
+                        {viva.organisation_process_completed && (
+                          <span className="status-badge organized">📋 Organized</span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => {
+                          setSelectedViva(viva);
+                          setShowVivaDetailModal(true);
+                        }}
+                        className="btn btn-sm secondary"
+                        title="View Details"
+                      >
+                        👁️ View
+                      </button>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>
+                      No vivas found. Use the search and filters above to find vivas.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const renderSubmissionManagement = () => (
     <div className="main-content">
       {/* Page Header */}
@@ -2446,6 +2622,8 @@ const GbosAdminDashboard = () => {
         return renderRegistrationManagement();
       case 'viva-teams':
         return renderVivaTeamManagement();
+      case 'viva':
+        return renderVivaManagement();
       case 'submissions':
         return renderSubmissionManagement();
       case 'appraisals':

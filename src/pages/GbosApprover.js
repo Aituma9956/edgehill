@@ -1556,37 +1556,39 @@ const StudentSubmissionsModal = ({ studentNumber, submissions, onClose }) => {
                 <thead>
                   <tr>
                     <th>Submission ID</th>
+                    <th>Title</th>
                     <th>Type</th>
-                    <th>Stage</th>
                     <th>Status</th>
-                    <th>Submitted Date</th>
-                    <th>Reviewed Date</th>
+                    <th>Date Expected</th>
+                    <th>Date Received</th>
+                    <th>Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   {submissions.map(submission => (
-                    <tr key={submission.id}>
-                      <td><strong>#{submission.id}</strong></td>
+                    <tr key={submission.submission_id}>
+                      <td><strong>#{submission.submission_id}</strong></td>
+                      <td>{submission.title || 'N/A'}</td>
                       <td>
                         <span className={`status-badge type-${submission.submission_type}`}>
-                          {submission.submission_type?.charAt(0).toUpperCase() + submission.submission_type?.slice(1) || 'N/A'}
+                          {submission.submission_type?.replace('_', ' ').toUpperCase() || 'N/A'}
                         </span>
                       </td>
                       <td>
-                        <span className={`status-badge stage-${submission.stage}`}>
-                          {submission.stage?.charAt(0).toUpperCase() + submission.stage?.slice(1) || 'N/A'}
+                        <span className={`status-badge ${submission.status?.toLowerCase()}`}>
+                          {submission.status?.charAt(0).toUpperCase() + submission.status?.slice(1).toLowerCase() || 'N/A'}
                         </span>
                       </td>
                       <td>
-                        <span className={`status-badge ${submission.status}`}>
-                          {submission.status?.charAt(0).toUpperCase() + submission.status?.slice(1) || 'N/A'}
-                        </span>
+                        {submission.date_expected ? new Date(submission.date_expected).toLocaleDateString() : 'N/A'}
                       </td>
                       <td>
-                        {submission.submission_date ? new Date(submission.submission_date).toLocaleDateString() : 'N/A'}
+                        {submission.date_received ? new Date(submission.date_received).toLocaleDateString() : 'Not received'}
                       </td>
                       <td>
-                        {submission.reviewed_date ? new Date(submission.reviewed_date).toLocaleDateString() : 'Not reviewed'}
+                        <div style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {submission.description || 'N/A'}
+                        </div>
                       </td>
                     </tr>
                   ))}

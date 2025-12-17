@@ -40,9 +40,12 @@ const StudentDashboard = () => {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [openActionDropdownId, setOpenActionDropdownId] = useState(null);
   const [submissionForm, setSubmissionForm] = useState({
-    submission_type: 'thesis',
+    submission_type: 'THESIS',
+    status: 'DRAFT',
     title: '',
-    description: ''
+    description: '',
+    date_expected: '',
+    submission_notes: ''
   });
   const [uploadFile, setUploadFile] = useState(null);
   const [submissionError, setSubmissionError] = useState('');
@@ -68,50 +71,55 @@ const StudentDashboard = () => {
   const [selectedVivaTeam, setSelectedVivaTeam] = useState(null);
 
   useEffect(() => {
+    if (!user) return; // Wait for user to be loaded
+    
     fetchStudentData();
     fetchUserProfile();
-  }, []);
+  }, [user]); // Re-fetch when user changes
 
   const fetchStudentData = async () => {
     try {
       setLoading(true);
       setError('');
       
-      // Try to get student details - the username IS the student_number in most cases
-      let studentResponse;
-      let studentNumber;
-      
-      try {
-        // First, try using username directly as student_number
-        studentNumber = user.username;
-        studentResponse = await studentAPI.getStudentByNumber(studentNumber);
-        console.log('Found student using username as student_number:', studentResponse);
-      } catch (firstError) {
-        console.log('Username is not student_number, trying other methods...');
-        // Fallback to the comprehensive search
-        studentResponse = await studentAPI.getCurrentStudent(user);
-        studentNumber = studentResponse.student_number;
+      if (!user || !user.username) {
+        throw new Error('User not logged in');
       }
       
+      // Get student record - use username as student_number
+      const studentNumber = user.username;
+      console.log('Fetching student data for student_number:', studentNumber);
+      
+      const studentResponse = await studentAPI.getStudentByNumber(studentNumber);
+      console.log('Student data fetched:', studentResponse);
       setStudentData(studentResponse);
       
-      // Get student supervisors
-      const supervisorsResponse = await assignmentAPI.getStudentSupervisors(studentNumber);
-      setStudentSupervisors(supervisorsResponse);
+      // Fetch all related data in parallel
+      const [supervisorsResponse, allSupervisorsResponse, vivaTeamsResponse, submissionsResponse] = await Promise.all([
+        assignmentAPI.getStudentSupervisors(studentNumber),
+        supervisorAPI.getAllSupervisors(0, 100),
+        vivaTeamAPI.getAllVivaTeams(0, 100, studentNumber),
+        submissionAPI.getSubmissions(studentNumber)
+      ]);
       
-      // Get all supervisors for reference
-      const allSupervisorsResponse = await supervisorAPI.getAllSupervisors();
-      setAllSupervisors(allSupervisorsResponse);
+      console.log('Supervisors:', supervisorsResponse);
+      console.log('Viva Teams:', vivaTeamsResponse);
+      console.log('Submissions:', submissionsResponse);
       
-      // Get student viva teams
-      const vivaTeamsResponse = await vivaTeamAPI.getAll({ student_number: studentNumber });
-      setVivaTeams(vivaTeamsResponse);
-      
-      // Get student submissions
-      await fetchSubmissions();
+      setStudentSupervisors(supervisorsResponse || []);
+      setAllSupervisors(allSupervisorsResponse || []);
+      setVivaTeams(vivaTeamsResponse || []);
+      setSubmissions(submissionsResponse || []);
       
     } catch (err) {
+      console.error('Error fetching student data:', err);
       setError(err.message || 'Failed to fetch student data');
+      
+      // Set empty arrays so UI doesn't break
+      setStudentSupervisors([]);
+      setAllSupervisors([]);
+      setVivaTeams([]);
+      setSubmissions([]);
     } finally {
       setLoading(false);
     }
@@ -220,17 +228,23 @@ const StudentDashboard = () => {
       const submissionData = {
         student_number: studentData?.student_number || user.username,
         submission_type: submissionForm.submission_type,
+        status: submissionForm.status,
         title: submissionForm.title,
-        description: submissionForm.description
+        description: submissionForm.description,
+        date_expected: submissionForm.date_expected || null,
+        submission_notes: submissionForm.submission_notes || ''
       };
       
       const newSubmission = await submissionAPI.createSubmission(submissionData);
       setSuccessMessage('Submission created successfully!');
       setShowCreateSubmissionModal(false);
       setSubmissionForm({
-        submission_type: 'thesis',
+        submission_type: 'THESIS',
+        status: 'DRAFT',
         title: '',
-        description: ''
+        description: '',
+        date_expected: '',
+        submission_notes: ''
       });
       
       // Refresh submissions
@@ -563,6 +577,14 @@ const StudentDashboard = () => {
         </div>
         
         <div className="stats-card">
+          <div className="stats-value">{submissions.length}</div>
+          <div className="stats-label">Submissions</div>
+          <span className={`status-badge ${submissions.length > 0 ? 'active' : 'inactive'}`}>
+            {submissions.length > 0 ? 'Available' : 'None'}
+          </span>
+        </div>
+        
+        <div className="stats-card">
           <div className="stats-value">{vivaTeams.length}</div>
           <div className="stats-label">Viva Teams</div>
           <span className={`status-badge ${vivaTeams.length > 0 ? 'active' : 'inactive'}`}>
@@ -571,10 +593,10 @@ const StudentDashboard = () => {
         </div>
         
         <div className="stats-card">
-          <div className="stats-value">{studentData?.course_code || 'N/A'}</div>
-          <div className="stats-label">Course Code</div>
-          <span className={`status-badge ${studentData?.course_code ? 'active' : 'inactive'}`}>
-            {studentData?.course_code ? 'Enrolled' : 'Not Set'}
+          <div className="stats-value">{studentData?.cohort || 'N/A'}</div>
+          <div className="stats-label">Cohort</div>
+          <span className={`status-badge ${studentData?.cohort ? 'active' : 'inactive'}`}>
+            {studentData?.cohort ? 'Enrolled' : 'Not Set'}
           </span>
         </div>
       </div>
@@ -692,13 +714,6 @@ const StudentDashboard = () => {
           <h2 className="card-title">Update Profile</h2>
           <span className="card-subtitle">Update your personal information</span>
         </div>
-        
-        {profileError && (
-          <div className="alert alert-error">
-            <div className="alert-icon">⚠️</div>
-            <div className="alert-content">{profileError}</div>
-          </div>
-        )}
         
         <form onSubmit={handleProfileUpdate} className="profile-form compact-form">
           <div className="form-row">
@@ -1031,13 +1046,6 @@ const StudentDashboard = () => {
           Welcome, {user?.first_name || user?.username}
         </div>
       </div>
-
-      {submissionError && (
-        <div className="alert alert-error">
-          <div className="alert-icon">⚠️</div>
-          <div className="alert-content">{submissionError}</div>
-        </div>
-      )}
 
       <div className="dashboard-card">
         <div className="card-header">
@@ -1536,23 +1544,29 @@ const StudentDashboard = () => {
         <div className="modal-overlay show" onClick={() => {
           setShowCreateSubmissionModal(false);
           setSubmissionForm({
-            submission_type: 'thesis',
+            submission_type: 'THESIS',
+            status: 'DRAFT',
             title: '',
-            description: ''
+            description: '',
+            date_expected: '',
+            submission_notes: ''
           });
           setSubmissionError('');
         }}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">Submit</h3>
+              <h3 className="modal-title">Create Submission</h3>
               <button 
                 className="modal-close" 
                 onClick={() => {
                   setShowCreateSubmissionModal(false);
                   setSubmissionForm({
-                    submission_type: 'thesis',
+                    submission_type: 'THESIS',
+                    status: 'DRAFT',
                     title: '',
-                    description: ''
+                    description: '',
+                    date_expected: '',
+                    submission_notes: ''
                   });
                   setSubmissionError('');
                 }}
@@ -1569,23 +1583,40 @@ const StudentDashboard = () => {
               
               <form onSubmit={handleCreateSubmission}>
                 <div className="form-group">
-                  <label className="form-label">Submission Type:</label>
+                  <label className="form-label">Submission Type: *</label>
                   <select
                     className="form-input"
                     value={submissionForm.submission_type}
                     onChange={(e) => setSubmissionForm({...submissionForm, submission_type: e.target.value})}
                     required
                   >
-                    <option value="registration">Registration</option>
-                    <option value="viva_document">Viva Document</option>
-                    <option value="thesis">Thesis</option>
-                    <option value="correction">Correction</option>
-                    <option value="annual_report">Annual Report</option>
+                    <option value="REGISTRATION">Registration</option>
+                    <option value="VIVA_DOCUMENT">Viva Document</option>
+                    <option value="THESIS">Thesis</option>
+                    <option value="CORRECTION">Correction</option>
+                    <option value="ANNUAL_REPORT">Annual Report</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Status: *</label>
+                  <select
+                    className="form-input"
+                    value={submissionForm.status}
+                    onChange={(e) => setSubmissionForm({...submissionForm, status: e.target.value})}
+                    required
+                  >
+                    <option value="DRAFT">Draft</option>
+                    <option value="SUBMITTED">Submitted</option>
+                    <option value="UNDER_REVIEW">Under Review</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Rejected</option>
+                    <option value="REVISION_REQUIRED">Revision Required</option>
                   </select>
                 </div>
                 
                 <div className="form-group">
-                  <label className="form-label">Title:</label>
+                  <label className="form-label">Title: *</label>
                   <input
                     type="text"
                     className="form-input"
@@ -1597,7 +1628,7 @@ const StudentDashboard = () => {
                 </div>
                 
                 <div className="form-group">
-                  <label className="form-label">Description:</label>
+                  <label className="form-label">Description: *</label>
                   <textarea
                     className="form-input"
                     value={submissionForm.description}
@@ -1605,6 +1636,28 @@ const StudentDashboard = () => {
                     required
                     placeholder="Enter submission description"
                     rows="4"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Expected Date:</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={submissionForm.date_expected}
+                    onChange={(e) => setSubmissionForm({...submissionForm, date_expected: e.target.value})}
+                    placeholder="Select expected date"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Submission Notes:</label>
+                  <textarea
+                    className="form-input"
+                    value={submissionForm.submission_notes}
+                    onChange={(e) => setSubmissionForm({...submissionForm, submission_notes: e.target.value})}
+                    placeholder="Add any additional notes (optional)"
+                    rows="3"
                   />
                 </div>
               </form>
@@ -1616,9 +1669,12 @@ const StudentDashboard = () => {
                 onClick={() => {
                   setShowCreateSubmissionModal(false);
                   setSubmissionForm({
-                    submission_type: 'thesis',
+                    submission_type: 'THESIS',
+                    status: 'DRAFT',
                     title: '',
-                    description: ''
+                    description: '',
+                    date_expected: '',
+                    submission_notes: ''
                   });
                   setSubmissionError('');
                 }}
@@ -1631,7 +1687,7 @@ const StudentDashboard = () => {
                 className="btn btn-primary"
                 onClick={handleCreateSubmission}
               >
-                Submit
+                Create Submission
               </button>
             </div>
           </div>
